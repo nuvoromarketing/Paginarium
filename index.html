@@ -96,8 +96,8 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .btn-s{background:none;color:var(--brown);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;border:none;border-bottom:1.5px solid var(--copper);padding-bottom:2px;cursor:pointer;}
 
 /* EXPLORE */
-#page-explore{padding:5rem 4rem 3rem 8rem;}
-.page-head{margin-bottom:2rem;}
+#page-explore{padding:5rem 4rem 3rem 5rem;}
+.page-head{margin-bottom:2rem;text-align:left;}
 .page-head h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);}
 .page-head p{font-family:'Lora',serif;color:var(--muted);margin-top:.3rem;}
 .search-row{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;}
@@ -128,7 +128,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .book-photo img{width:100%;height:100%;object-fit:cover;}
 
 /* PUBLISH */
-#page-publish{padding:5rem 4rem 3rem 8rem;}
+#page-publish{padding:5rem 4rem 3rem 5rem;}
 .pub-form{max-width:520px;background:white;padding:2rem;border:1px solid var(--cream-dark);border-top:4px solid var(--copper);}
 .color-row{display:grid;grid-template-columns:repeat(6,1fr);gap:.4rem;margin-top:.4rem;}
 .cdot{width:100%;aspect-ratio:1;border-radius:2px;cursor:pointer;border:3px solid transparent;transition:border-color .2s;}
@@ -144,7 +144,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .progress-fill{height:100%;background:var(--copper);width:0%;transition:width .2s;}
 
 /* MY BOOKS */
-#page-mybooks{padding:5rem 4rem 3rem 8rem;}
+#page-mybooks{padding:5rem 4rem 3rem 5rem;}
 .mb-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
 .btn-del{font-size:.7rem;background:none;border:1px solid #e74c3c;color:#e74c3c;padding:.28rem .65rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;}
 .btn-del:hover{background:#e74c3c;color:white;}
@@ -179,7 +179,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .btn-report:hover{background:#e74c3c;color:white;}
 
 /* ADMIN */
-#page-admin{padding:5rem 4rem 3rem 8rem;}
+#page-admin{padding:5rem 4rem 3rem 5rem;}
 .admin-tabs{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap;}
 .admin-tab{padding:.45rem 1.1rem;border:1.5px solid var(--cream-dark);font-size:.78rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;border-radius:2px;background:white;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .2s;}
 .admin-tab.on{background:var(--brown);color:var(--cream);border-color:var(--brown);}
@@ -922,12 +922,13 @@ window.loadBlocked = async function() {
   var list = document.getElementById('blocked-list');
   if (!list || !me) return;
   try {
-    var snap = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', me.uid)));
-    if (snap.empty) {
+    var snap = await getDocs(collection(db, 'blocked_users'));
+    var mine = snap.docs.filter(function(d) { return d.data().blockedBy === me.uid; });
+    if (!mine.length) {
       list.innerHTML = '<p style="font-family:\'Lora\',serif;font-size:.88rem;color:var(--muted);font-style:italic">No has bloqueado a nadie.</p>';
       return;
     }
-    list.innerHTML = snap.docs.map(function(d) {
+    list.innerHTML = mine.map(function(d) {
       var data = d.data();
       return '<div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid var(--cream-dark);padding:.8rem 1rem;border-radius:2px;max-width:400px">' +
         '<span style="font-size:.88rem;color:var(--brown);font-weight:500">🚫 ' + (data.blockedUserName || data.blockedUser) + '</span>' +
@@ -1016,11 +1017,18 @@ window.loadChats = function() {
       cl.innerHTML = '<li style="padding:1.2rem 1.5rem;color:var(--muted);font-size:.82rem;font-family:\'Lora\',serif;font-style:italic">Sin conversaciones aún.</li>';
       return;
     }
-    var docs = snap.docs.slice().sort(function(a, b) {
+    var docs = snap.docs.filter(function(d) {
+      var hidden = d.data().hiddenFor;
+      return !hidden || !hidden[me.uid];
+    }).sort(function(a, b) {
       var ta = a.data().updatedAt ? a.data().updatedAt.seconds : 0;
       var tb = b.data().updatedAt ? b.data().updatedAt.seconds : 0;
       return tb - ta;
     });
+    if (!docs.length) {
+      cl.innerHTML = '<li style="padding:1.2rem 1.5rem;color:var(--muted);font-size:.82rem;font-family:\'Lora\',serif;font-style:italic">Sin conversaciones aún.</li>';
+      return;
+    }
     docs.forEach(function(d) {
       var data = d.data();
       var otherId = data.participants.find(function(p) { return p !== me.uid; });
@@ -1088,13 +1096,12 @@ window.blockUser = async function(userId, userName, chatId) {
 };
 
 window.deleteChat = async function(chatId, silent) {
-  if (!silent && !confirm('¿Borrar esta conversación? Se eliminará para ti.')) return;
+  if (!silent && !confirm('¿Borrar esta conversación? Solo se ocultará para ti.')) return;
   try {
-    var msgs = await getDocs(collection(db, 'chats', chatId, 'messages'));
-    for (var i = 0; i < msgs.docs.length; i++) {
-      await deleteDoc(doc(db, 'chats', chatId, 'messages', msgs.docs[i].id));
-    }
-    await deleteDoc(doc(db, 'chats', chatId));
+    // Guardar en el documento del chat que este usuario lo ocultó
+    await setDoc(doc(db, 'chats', chatId), {
+      hiddenFor: { [me.uid]: true }
+    }, { merge: true });
     if (chatUnsub) { chatUnsub(); chatUnsub = null; }
     activeChatId = null;
     document.getElementById('chat-main').innerHTML = '<div class="chat-empty-main">Selecciona una conversación 📖</div>';
@@ -1114,15 +1121,19 @@ window.sendMsg = async function() {
     var participants = chatSnap.data().participants || [];
     var otherId = participants.find(function(p) { return p !== me.uid; });
     if (otherId) {
-      var b1 = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', me.uid), where('blockedUser', '==', otherId)));
-      var b2 = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', otherId), where('blockedUser', '==', me.uid)));
-      if (!b1.empty) { toast('Has bloqueado a este usuario. Desbloquéalo para enviar mensajes.'); return; }
-      if (!b2.empty) { toast('Este usuario te ha bloqueado.'); return; }
+      var allBlocks = await getDocs(collection(db, 'blocked_users'));
+      var bloqueadoPorMi = allBlocks.docs.some(function(d) { return d.data().blockedBy === me.uid && d.data().blockedUser === otherId; });
+      var meBloqueo = allBlocks.docs.some(function(d) { return d.data().blockedBy === otherId && d.data().blockedUser === me.uid; });
+      if (bloqueadoPorMi) { toast('Has bloqueado a este usuario. Desbloquéalo para enviar mensajes.'); return; }
+      if (meBloqueo) { toast('Este usuario te ha bloqueado.'); return; }
     }
   }
 
   inp.value = '';
-  await setDoc(doc(db, 'chats', activeChatId), { lastMessage: text, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(doc(db, 'chats', activeChatId), {
+    lastMessage: text, updatedAt: serverTimestamp(),
+    ['hiddenFor.' + me.uid]: false
+  }, { merge: true });
   await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
     text: text, senderId: me.uid, senderName: me.displayName || me.email.split('@')[0], createdAt: serverTimestamp()
   });
