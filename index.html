@@ -454,6 +454,13 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     <span>Valoración: <strong id="user-avg-rating">Sin valoraciones</strong></span>
   </div>
   <div class="books-grid" id="mybooks-grid"></div>
+
+  <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--cream-dark)">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--brown);margin-bottom:1rem">🚫 Usuarios bloqueados</h3>
+    <div id="blocked-list" style="display:flex;flex-direction:column;gap:.6rem">
+      <p style="font-family:'Lora',serif;font-size:.88rem;color:var(--muted);font-style:italic">Cargando...</p>
+    </div>
+  </div>
 </div>
 
 <!-- CHAT -->
@@ -895,19 +902,50 @@ window.loadMyBooks = async function() {
   var books = snap.docs.map(function(d) { return Object.assign({ id: d.id }, d.data()); });
   if (!books.length) {
     grid.innerHTML = '<div class="empty">Aún no has publicado libros.<br/><br/><button class="btn-p" onclick="go(\'publish\')" style="margin-top:.5rem">Publicar mi primer libro</button></div>';
-    return;
+  } else {
+    grid.innerHTML = books.map(function(b) {
+      var badge = b.verified ? '<span class="verified-badge">' + vSVG + ' Verificado</span>' : '<span style="font-size:.66rem;color:var(--muted);font-style:italic">🕐 En revisión</span>';
+      return '<div class="book-card">' +
+        '<div class="bc-cover" style="background:' + (b.color || 'linear-gradient(135deg,#3d2b1f,#1a0e08)') + '"><span>' + b.title + '</span></div>' +
+        '<div class="bc-body">' + badge +
+        '<div class="bc-title">' + b.title + '</div>' +
+        '<div class="bc-author">' + b.author + '</div>' +
+        '<div class="bc-footer"><span class="bc-genre">' + (b.genre || 'General') + '</span>' +
+        '<button class="btn-del" onclick="delBook(\'' + b.id + '\')">🗑 Eliminar</button></div>' +
+        '</div></div>';
+    }).join('');
   }
-  grid.innerHTML = books.map(function(b) {
-    var badge = b.verified ? '<span class="verified-badge">' + vSVG + ' Verificado</span>' : '<span style="font-size:.66rem;color:var(--muted);font-style:italic">🕐 En revisión</span>';
-    return '<div class="book-card">' +
-      '<div class="bc-cover" style="background:' + (b.color || 'linear-gradient(135deg,#3d2b1f,#1a0e08)') + '"><span>' + b.title + '</span></div>' +
-      '<div class="bc-body">' + badge +
-      '<div class="bc-title">' + b.title + '</div>' +
-      '<div class="bc-author">' + b.author + '</div>' +
-      '<div class="bc-footer"><span class="bc-genre">' + (b.genre || 'General') + '</span>' +
-      '<button class="btn-del" onclick="delBook(\'' + b.id + '\')">🗑 Eliminar</button></div>' +
-      '</div></div>';
-  }).join('');
+  loadBlocked();
+};
+
+window.loadBlocked = async function() {
+  var list = document.getElementById('blocked-list');
+  if (!list || !me) return;
+  try {
+    var snap = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', me.uid)));
+    if (snap.empty) {
+      list.innerHTML = '<p style="font-family:\'Lora\',serif;font-size:.88rem;color:var(--muted);font-style:italic">No has bloqueado a nadie.</p>';
+      return;
+    }
+    list.innerHTML = snap.docs.map(function(d) {
+      var data = d.data();
+      return '<div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1px solid var(--cream-dark);padding:.8rem 1rem;border-radius:2px;max-width:400px">' +
+        '<span style="font-size:.88rem;color:var(--brown);font-weight:500">🚫 ' + (data.blockedUserName || data.blockedUser) + '</span>' +
+        '<button onclick="unblockUser(\'' + d.id + '\',\'' + esc(data.blockedUserName || '') + '\')" style="font-size:.72rem;background:none;border:1px solid var(--green);color:var(--green);padding:.28rem .65rem;cursor:pointer;border-radius:2px;font-family:\'DM Sans\',sans-serif">✓ Desbloquear</button>' +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<p style="font-family:\'Lora\',serif;font-size:.88rem;color:var(--muted);font-style:italic">Error cargando lista.</p>';
+  }
+};
+
+window.unblockUser = async function(docId, userName) {
+  if (!confirm('¿Desbloquear a ' + (userName || 'este usuario') + '?')) return;
+  try {
+    await deleteDoc(doc(db, 'blocked_users', docId));
+    toast('✓ Usuario desbloqueado.');
+    loadBlocked();
+  } catch(e) { toast('Error al desbloquear.'); }
 };
 
 window.delBook = async function(id) {
@@ -1069,6 +1107,20 @@ window.sendMsg = async function() {
   var inp = document.getElementById('chat-in');
   var text = inp.value.trim();
   if (!text) return;
+
+  // Verificar si hay bloqueo activo
+  var chatSnap = await getDoc(doc(db, 'chats', activeChatId));
+  if (chatSnap.exists()) {
+    var participants = chatSnap.data().participants || [];
+    var otherId = participants.find(function(p) { return p !== me.uid; });
+    if (otherId) {
+      var b1 = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', me.uid), where('blockedUser', '==', otherId)));
+      var b2 = await getDocs(query(collection(db, 'blocked_users'), where('blockedBy', '==', otherId), where('blockedUser', '==', me.uid)));
+      if (!b1.empty) { toast('Has bloqueado a este usuario. Desbloquéalo para enviar mensajes.'); return; }
+      if (!b2.empty) { toast('Este usuario te ha bloqueado.'); return; }
+    }
+  }
+
   inp.value = '';
   await setDoc(doc(db, 'chats', activeChatId), { lastMessage: text, updatedAt: serverTimestamp() }, { merge: true });
   await addDoc(collection(db, 'chats', activeChatId, 'messages'), {
