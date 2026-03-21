@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Páginarium — Intercambio de Libros</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--cream:#f5f0e8;--cream-dark:#ede5d4;--brown:#3d2b1f;--copper:#b5651d;--copper-light:#d4845a;--gold:#c8943a;--green:#2d4a3e;--ink:#1a1208;--text:#2e2010;--muted:#7a6550;--shadow:0 4px 24px rgba(61,43,31,.10);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--cream);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+#loading{position:fixed;inset:0;background:var(--cream);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;transition:opacity .4s;}
+#loading.hide{opacity:0;pointer-events:none;}
+#loading .l-logo{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--brown);}
+#loading .l-logo span{color:var(--copper);font-style:italic;}
+#loading p{font-family:'Lora',serif;font-size:.9rem;font-style:italic;color:var(--muted);}
+.spinner{width:36px;height:36px;border:3px solid var(--cream-dark);border-top-color:var(--copper);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1rem 3rem;background:rgba(245,240,232,.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(61,43,31,.1);}
+.nav-logo{font-family:'Playfair Display',serif;font-size:1.45rem;font-weight:900;color:var(--brown);text-decoration:none;cursor:pointer;}
+.nav-logo span{color:var(--copper);font-style:italic;}
+.nav-links{display:flex;gap:1.8rem;list-style:none;align-items:center;}
+.nav-links a{font-size:.82rem;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);cursor:pointer;text-decoration:none;transition:color .2s;padding:.3rem 0;border-bottom:2px solid transparent;}
+.nav-links a:hover{color:var(--brown);border-bottom-color:var(--copper);}
+.nav-btn{background:var(--brown);color:var(--cream)!important;padding:.5rem 1.3rem;border-radius:2px;border-bottom:none!important;}
+.nav-btn:hover{background:var(--copper)!important;}
+#nav-user{display:none;align-items:center;gap:.8rem;}
+#nav-uname{font-size:.85rem;font-weight:600;color:var(--brown);}
+#nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:white;flex-shrink:0;}
+#btn-logout{background:none;border:1.5px solid rgba(61,43,31,.3);color:var(--muted);padding:.38rem .9rem;font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;border-radius:2px;transition:all .2s;}
+#btn-logout:hover{border-color:var(--brown);color:var(--brown);}
+.nav-ham{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:.3rem;}
+.nav-ham span{display:block;width:22px;height:2px;background:var(--brown);}
+.page{display:none;min-height:100vh;padding-top:72px;}
+.page.active{display:block;}
+#page-home .hero{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 72px);overflow:hidden;}
+.hero-left{display:flex;flex-direction:column;justify-content:center;padding:4rem 3.5rem 4rem 4rem;}
+.eyebrow{font-size:.72rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--copper);margin-bottom:1.4rem;display:flex;align-items:center;gap:.8rem;}
+.eyebrow::before{content:'';display:inline-block;width:2rem;height:1px;background:var(--copper);}
+h1{font-family:'Playfair Display',serif;font-size:clamp(2.6rem,4vw,4.2rem);font-weight:900;line-height:1.06;color:var(--brown);margin-bottom:1.4rem;}
+h1 em{font-style:italic;color:var(--copper);}
+.hero-sub{font-family:'Lora',serif;font-size:1.02rem;line-height:1.75;color:var(--muted);max-width:400px;margin-bottom:2.4rem;}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;}
+.btn-p{background:var(--brown);color:var(--cream);padding:.9rem 2rem;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;border:none;cursor:pointer;text-decoration:none;display:inline-block;transition:background .2s,transform .2s;border-radius:2px;}
+.btn-p:hover{background:var(--copper);transform:translateY(-1px);}
+.btn-s{color:var(--brown);font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;background:none;border:none;border-bottom:1.5px solid var(--copper);padding-bottom:2px;cursor:pointer;transition:color .2s;}
+.btn-s:hover{color:var(--copper);}
+.hero-stats{display:flex;gap:2.5rem;margin-top:2.5rem;padding-top:2rem;border-top:1px solid rgba(61,43,31,.12);}
+.stat-n{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:700;color:var(--brown);}
+.stat-l{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:.15rem;}
+.hero-right{background:var(--brown);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.hero-right::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 60%,rgba(181,101,29,.22) 0%,transparent 65%);}
+.book-stack{position:relative;width:270px;height:360px;}
+.bk{position:absolute;border-radius:3px 7px 7px 3px;box-shadow:4px 6px 20px rgba(0,0,0,.4);transition:transform .4s ease;}
+.bk:hover{transform:translateY(-8px) rotate(0deg)!important;}
+.bk::after{content:'';position:absolute;left:0;top:0;bottom:0;width:15px;background:rgba(0,0,0,.28);border-radius:3px 0 0 3px;}
+.bk1{width:150px;height:215px;background:linear-gradient(135deg,#8b3a3a,#5c1f1f);bottom:65px;left:35px;transform:rotate(-8deg);z-index:3;}
+.bk2{width:138px;height:192px;background:linear-gradient(135deg,#2d4a3e,#1a2e28);bottom:80px;left:70px;transform:rotate(3deg);z-index:4;}
+.bk3{width:145px;height:205px;background:linear-gradient(135deg,#c8943a,#8b5e1a);bottom:90px;left:108px;transform:rotate(-4deg);z-index:5;}
+.bk4{width:128px;height:180px;background:linear-gradient(135deg,#4a3728,#2d1f14);bottom:70px;left:145px;transform:rotate(7deg);z-index:3;}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(26,18,8,.7);z-index:99999;display:none;align-items:center;justify-content:center;padding:1rem;}
+.overlay.open{display:flex!important;}
+.auth-wrap{background:white;border:1px solid var(--cream-dark);padding:2.8rem;width:100%;max-width:420px;box-shadow:var(--shadow);position:relative;max-height:90vh;overflow-y:auto;}
+.auth-wrap h2{font-family:'Playfair Display',serif;font-size:1.9rem;font-weight:800;color:var(--brown);margin-bottom:.4rem;}
+.auth-wrap>p{font-family:'Lora',serif;font-size:.88rem;color:var(--muted);margin-bottom:1.8rem;}
+.tabs{display:flex;border-bottom:2px solid var(--cream-dark);margin-bottom:1.8rem;}
+.tab{flex:1;padding:.75rem;text-align:center;font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--muted);border:none;background:none;transition:all .2s;}
+.tab.on{color:var(--brown);border-bottom:2px solid var(--copper);margin-bottom:-2px;}
+.fg{margin-bottom:1.1rem;}
+.fg label{display:block;font-size:.75rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem;}
+.fg input,.fg textarea,.fg select{width:100%;padding:.78rem 1rem;border:1.5px solid var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;border-radius:2px;}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--copper);}
+.fg textarea{resize:vertical;min-height:80px;}
+.btn-block{width:100%;padding:.95rem;background:var(--brown);color:var(--cream);border:none;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;cursor:pointer;transition:background .2s;margin-top:.4rem;border-radius:2px;}
+.btn-block:hover{background:var(--copper);}
+.or{text-align:center;color:var(--muted);font-size:.78rem;margin:1.1rem 0;position:relative;}
+.or::before,.or::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--cream-dark);}
+.or::before{left:0;}.or::after{right:0;}
+.btn-google{width:100%;padding:.85rem;background:white;border:1.5px solid var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:border-color .2s;color:var(--text);border-radius:2px;}
+.btn-google:hover{border-color:var(--copper);}
+.alert{padding:.75rem 1rem;font-size:.83rem;margin-bottom:1rem;border-radius:2px;display:none;}
+.alert.err{background:#fde8e8;color:#c0392b;border-left:3px solid #c0392b;}
+.terms-check{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:1rem;font-size:.82rem;color:var(--muted);font-family:'DM Sans',sans-serif;line-height:1.4;}
+.terms-check input{margin-top:.1rem;flex-shrink:0;accent-color:var(--copper);}
+.terms-check a{color:var(--copper);cursor:pointer;}
+#page-explore{padding:5.5rem 3.5rem 3.5rem;}
+.page-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+.page-header h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);}
+.page-header .sub{font-family:'Lora',serif;font-size:.9rem;color:var(--muted);margin-top:.3rem;}
+.search-row{display:flex;gap:.8rem;margin-bottom:1rem;flex-wrap:wrap;}
+.search-row input{flex:1;min-width:180px;padding:.75rem 1.1rem;border:1.5px solid var(--cream-dark);font-family:'DM Sans',sans-serif;font-size:.88rem;background:white;outline:none;border-radius:2px;}
+.search-row input:focus{border-color:var(--copper);}
+.search-row select{padding:.75rem 1.1rem;border:1.5px solid var(--cream-dark);background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--text);outline:none;cursor:pointer;border-radius:2px;}
+.filter-bar{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap;}
+.filter-chip{padding:.4rem 1rem;font-size:.78rem;font-weight:500;border:1.5px solid var(--cream-dark);background:white;color:var(--muted);cursor:pointer;border-radius:99px;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.filter-chip.on{background:var(--brown);color:var(--cream);border-color:var(--brown);}
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1.4rem;}
+.book-card{background:white;border:1px solid var(--cream-dark);overflow:hidden;transition:transform .25s,box-shadow .25s;border-radius:3px;}
+.book-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(61,43,31,.13);}
+.book-card.unverified{opacity:.75;}
+.bc-cover{height:175px;display:flex;align-items:flex-end;padding:.9rem;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;color:white;position:relative;}
+.bc-cover::before{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 55%);}
+.bc-cover span{position:relative;z-index:1;line-height:1.3;}
+.bc-body{padding:.9rem 1.1rem;}
+.bc-title{font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;color:var(--brown);margin-bottom:.2rem;}
+.bc-author{font-family:'Lora',serif;font-size:.78rem;font-style:italic;color:var(--muted);margin-bottom:.5rem;}
+.bc-desc{font-size:.78rem;color:var(--muted);line-height:1.5;margin-bottom:.7rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.bc-city{font-size:.72rem;color:var(--muted);margin-bottom:.7rem;}
+.bc-footer{display:flex;justify-content:space-between;align-items:center;}
+.bc-genre{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:var(--copper);font-weight:500;}
+.btn-contact{font-size:.72rem;background:var(--brown);color:var(--cream);border:none;padding:.32rem .75rem;cursor:pointer;transition:background .2s;font-family:'DM Sans',sans-serif;border-radius:2px;}
+.btn-contact:hover{background:var(--copper);}
+.empty{text-align:center;padding:4rem 2rem;color:var(--muted);font-family:'Lora',serif;font-size:1rem;font-style:italic;grid-column:1/-1;}
+.verified-badge{display:inline-flex;align-items:center;gap:.25rem;background:#e8f4fd;color:#1a7abf;font-size:.68rem;font-weight:600;padding:.2rem .5rem;border-radius:99px;}
+.rating-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;color:var(--brown);}
+.rating-badge .star-icon{color:#f4c430;}
+.btn-report{font-size:.68rem;background:none;border:none;color:var(--muted);cursor:pointer;padding:.2rem .4rem;font-family:'DM Sans',sans-serif;transition:color .2s;}
+.btn-report:hover{color:#e74c3c;}
+.book-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:.4rem;margin-top:.6rem;}
+.book-photo{aspect-ratio:1;border-radius:2px;overflow:hidden;cursor:pointer;}
+.book-photo img{width:100%;height:100%;object-fit:cover;transition:transform .2s;}
+.book-photo:hover img{transform:scale(1.05);}
+#page-publish{padding:5.5rem 3.5rem 3.5rem;}
+#page-publish h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);margin-bottom:.4rem;}
+#page-publish .sub{font-family:'Lora',serif;font-size:.9rem;color:var(--muted);margin-bottom:2.2rem;}
+.pub-form{max-width:540px;background:white;padding:2.2rem;border:1px solid var(--cream-dark);border-radius:3px;box-shadow:var(--shadow);}
+.colors{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;}
+.color-dot{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:border-color .2s,transform .2s;}
+.color-dot:hover{transform:scale(1.1);}
+.color-dot.on{border-color:var(--brown);}
+.blocked-banner,.suspended-banner,.banned-banner{padding:.8rem 1rem;font-size:.85rem;margin-bottom:1rem;border-radius:2px;display:none;}
+.blocked-banner,.banned-banner{background:#fde8e8;border-left:3px solid #e74c3c;color:#c0392b;}
+.suspended-banner{background:#fff3cd;border-left:3px solid #f4c430;color:#856404;}
+.photo-upload-area{border:2px dashed var(--cream-dark);border-radius:3px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--cream);position:relative;}
+.photo-upload-area:hover{border-color:var(--copper);}
+.photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-upload-area p{font-size:.85rem;color:var(--muted);font-family:'Lora',serif;font-style:italic;pointer-events:none;}
+.photo-upload-area .upload-icon{font-size:1.8rem;margin-bottom:.4rem;pointer-events:none;}
+.photo-previews{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.8rem;}
+.photo-preview{position:relative;aspect-ratio:1;border-radius:3px;overflow:hidden;background:var(--cream-dark);}
+.photo-preview img{width:100%;height:100%;object-fit:cover;}
+.photo-preview .remove-photo{position:absolute;top:.2rem;right:.2rem;background:rgba(0,0,0,.6);color:white;border:none;border-radius:50%;width:20px;height:20px;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.upload-progress{height:4px;background:var(--cream-dark);border-radius:2px;margin-top:.5rem;overflow:hidden;display:none;}
+.upload-progress-bar{height:100%;background:var(--copper);border-radius:2px;transition:width .3s;}
+#page-mybooks{padding:5.5rem 3.5rem 3.5rem;}
+.mb-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+#page-mybooks h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);margin-bottom:.3rem;}
+#page-mybooks .sub{font-family:'Lora',serif;font-size:.9rem;color:var(--muted);}
+.btn-del{font-size:.7rem;background:none;border:1px solid #e74c3c;color:#e74c3c;padding:.28rem .65rem;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;border-radius:2px;}
+.btn-del:hover{background:#e74c3c;color:white;}
+.user-status-bar{background:white;border:1px solid var(--cream-dark);border-radius:3px;padding:1rem 1.5rem;margin-bottom:1.5rem;display:none;align-items:center;gap:1rem;flex-wrap:wrap;}
+.status-item{display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--muted);}
+.status-item strong{color:var(--brown);}
+#page-chat{padding-top:72px;display:none;height:100vh;flex-direction:row;}
+#page-chat.active{display:flex!important;}
+.chat-side{width:285px;border-right:1px solid var(--cream-dark);background:white;display:flex;flex-direction:column;flex-shrink:0;}
+.chat-side-head{padding:1.3rem 1.5rem;border-bottom:1px solid var(--cream-dark);}
+.chat-side-head h3{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown);}
+.chat-side-head p{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+.chat-list{list-style:none;overflow-y:auto;flex:1;}
+.ci{padding:.95rem 1.5rem;cursor:pointer;border-bottom:1px solid var(--cream-dark);transition:background .2s;}
+.ci:hover,.ci.on{background:var(--cream);}
+.ci-name{font-size:.88rem;font-weight:600;color:var(--brown);}
+.ci-prev{font-size:.75rem;color:var(--muted);margin-top:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ci-time{font-size:.68rem;color:var(--muted);margin-top:.1rem;}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.chat-main-head{padding:1.1rem 1.8rem;border-bottom:1px solid var(--cream-dark);background:white;display:flex;align-items:center;gap:.8rem;}
+.chat-avatar{width:36px;height:36px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:white;font-size:1rem;flex-shrink:0;}
+.chat-main-head-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--brown);}
+.chat-main-head-sub{font-size:.75rem;color:var(--muted);}
+.chat-msgs{flex:1;overflow-y:auto;padding:1.4rem 1.8rem;background:var(--cream);display:flex;flex-direction:column;gap:.9rem;}
+.no-chat{display:flex;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:1rem;color:var(--muted);font-family:'Lora',serif;font-style:italic;font-size:1rem;background:var(--cream);}
+.bubble{max-width:68%;padding:.75rem 1rem;font-size:.88rem;line-height:1.5;border-radius:4px;}
+.bubble.me{background:var(--brown);color:var(--cream);align-self:flex-end;}
+.bubble.them{background:white;color:var(--text);align-self:flex-start;border:1px solid var(--cream-dark);}
+.bubble-time{font-size:.65rem;opacity:.6;margin-top:.25rem;text-align:right;}
+.chat-input-area{display:flex;border-top:1px solid var(--cream-dark);background:white;}
+.chat-input-area input{flex:1;padding:.95rem 1.4rem;border:none;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--text);background:white;outline:none;}
+.chat-send{background:var(--brown);color:var(--cream);border:none;padding:.95rem 1.6rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;cursor:pointer;transition:background .2s;}
+.chat-send:hover{background:var(--copper);}
+#page-admin{padding:5.5rem 3.5rem 3.5rem;}
+#page-admin h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);margin-bottom:.4rem;}
+#page-admin .sub{font-family:'Lora',serif;font-size:.9rem;color:var(--muted);margin-bottom:2rem;}
+.admin-stats-row{display:flex;gap:1.5rem;margin-bottom:2rem;flex-wrap:wrap;}
+.admin-stat{background:white;border:1px solid var(--cream-dark);padding:1.2rem 1.8rem;border-radius:3px;text-align:center;}
+.admin-stat-n{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:700;color:var(--brown);}
+.admin-stat-l{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:.2rem;}
+.admin-tabs{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap;}
+.admin-tab{padding:.5rem 1.2rem;font-size:.82rem;font-weight:500;border:1.5px solid var(--cream-dark);background:white;color:var(--muted);cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.admin-tab.on{background:var(--brown);color:var(--cream);border-color:var(--brown);}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.4rem;}
+.admin-card{background:white;border:1px solid var(--cream-dark);border-radius:3px;overflow:hidden;display:flex;}
+.admin-card-cover{width:70px;min-height:100px;flex-shrink:0;}
+.admin-card-body{padding:.9rem 1rem;flex:1;}
+.admin-card-title{font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;color:var(--brown);margin-bottom:.15rem;}
+.admin-card-author{font-family:'Lora',serif;font-size:.75rem;font-style:italic;color:var(--muted);margin-bottom:.4rem;}
+.admin-card-owner{font-size:.72rem;color:var(--muted);margin-bottom:.7rem;}
+.admin-actions{display:flex;gap:.5rem;flex-wrap:wrap;}
+.btn-verify{font-size:.75rem;background:var(--green);color:white;border:none;padding:.35rem .8rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:background .2s;}
+.btn-verify:hover{background:#1e3d33;}
+.btn-reject{font-size:.75rem;background:none;border:1px solid #e74c3c;color:#e74c3c;padding:.35rem .8rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.btn-reject:hover{background:#e74c3c;color:white;}
+.report-badge{display:inline-flex;align-items:center;gap:.2rem;background:#fde8e8;color:#e74c3c;font-size:.68rem;font-weight:600;padding:.2rem .5rem;border-radius:99px;}
+#page-terms{padding:5.5rem 4rem 4rem;}
+#page-terms h2{font-family:'Playfair Display',serif;font-size:2rem;font-weight:800;color:var(--brown);margin-bottom:.5rem;}
+#page-terms .sub{font-family:'Lora',serif;font-size:.9rem;color:var(--muted);margin-bottom:2.5rem;}
+.terms-doc{max-width:720px;background:white;padding:2.5rem 3rem;border:1px solid var(--cream-dark);border-radius:3px;box-shadow:var(--shadow);}
+.terms-doc h3{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--brown);margin:1.8rem 0 .6rem;}
+.terms-doc h3:first-child{margin-top:0;}
+.terms-doc p,.terms-doc li{font-family:'Lora',serif;font-size:.9rem;line-height:1.8;color:var(--text);margin-bottom:.5rem;}
+.terms-doc ul{padding-left:1.5rem;margin-bottom:.8rem;}
+.terms-doc .highlight{background:var(--cream);border-left:3px solid var(--copper);padding:.8rem 1rem;border-radius:2px;margin:1rem 0;}
+.stars-row{display:flex;gap:.2rem;margin:.5rem 0;}
+.star{font-size:1.3rem;cursor:pointer;color:#ddd;transition:color .15s;}
+.star.on{color:#f4c430;}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:999999;display:none;align-items:center;justify-content:center;}
+#lightbox.open{display:flex;}
+#lightbox img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:3px;}
+#lightbox-close{position:absolute;top:1rem;right:1.2rem;background:none;border:none;color:white;font-size:2rem;cursor:pointer;line-height:1;}
+#toast{position:fixed;bottom:1.8rem;right:1.8rem;background:var(--brown);color:var(--cream);padding:.9rem 1.4rem;font-size:.85rem;border-left:4px solid var(--copper);z-index:999998;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;font-family:'DM Sans',sans-serif;border-radius:2px;max-width:300px;}
+#toast.show{transform:translateY(0);opacity:1;}
+@media(max-width:900px){
+  nav{padding:.9rem 1.4rem;}
+  .nav-links{display:none;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:rgba(245,240,232,.98);border-bottom:1px solid rgba(61,43,31,.1);padding:1rem 1.4rem;gap:1rem;}
+  .nav-links.open{display:flex;}
+  .nav-ham{display:flex;}
+  #page-home .hero{grid-template-columns:1fr;}
+  .hero-right{height:280px;}
+  .hero-left{padding:2.5rem 1.4rem;}
+  #page-explore,#page-publish,#page-mybooks,#page-admin,#page-terms{padding:5rem 1.4rem 2.5rem;}
+  #page-chat.active{flex-direction:column;height:auto;min-height:100vh;}
+  .chat-side{width:100%;max-height:220px;}
+  .books-grid,.admin-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));}
+}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="l-logo">Páginar<span>ium</span></div><div class="spinner"></div><p>Preparando tu biblioteca...</p></div>
+
+<nav>
+  <a class="nav-logo" onclick="go('home')">Páginar<span>ium</span></a>
+  <ul class="nav-links" id="nav-links">
+    <li><a onclick="go('explore')">Explorar</a></li>
+    <li id="nl-publish" style="display:none"><a onclick="go('publish')">Publicar</a></li>
+    <li id="nl-mybooks" style="display:none"><a onclick="go('mybooks')">Mis libros</a></li>
+    <li id="nl-chat" style="display:none"><a onclick="go('chat')">Mensajes</a></li>
+    <li id="nl-admin" style="display:none"><a onclick="go('admin')" style="color:var(--copper)!important">⚙ Admin</a></li>
+    <li><a onclick="go('terms')" style="font-size:.75rem">T&C</a></li>
+    <li id="nl-login"><a onclick="openAuth()" class="nav-btn">Ingresar</a></li>
+    <li id="nl-user" style="display:none;list-style:none"><div id="nav-user" style="display:flex;align-items:center;gap:.8rem"><div id="nav-avatar">?</div><span id="nav-uname"></span><button id="btn-logout" onclick="doLogout()">Salir</button></div></li>
+  </ul>
+  <div class="nav-ham" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+</nav>
+
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-left">
+      <div class="eyebrow">Intercambio de libros</div>
+      <h1>Cada libro<br/>merece una<br/><em>nueva vida.</em></h1>
+      <p class="hero-sub">Conectamos lectores para intercambiar libros de forma fácil, segura y gratuita.</p>
+      <div class="hero-btns"><button class="btn-p" onclick="go('explore')">Explorar libros</button><button class="btn-s" onclick="openAuth()">Unirse gratis →</button></div>
+      <div class="hero-stats"><div><div class="stat-n" id="stat-books">–</div><div class="stat-l">Libros disponibles</div></div><div><div class="stat-n" id="stat-users">–</div><div class="stat-l">Lectores registrados</div></div></div>
+    </div>
+    <div class="hero-right"><div class="book-stack"><div class="bk bk4"></div><div class="bk bk1"></div><div class="bk bk2"></div><div class="bk bk3"></div></div></div>
+  </div>
+  <div style="padding:5rem 4rem;background:white;border-top:1px solid var(--cream-dark)">
+    <div style="text-align:center;margin-bottom:3.5rem"><div style="font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--copper);font-weight:500;margin-bottom:.8rem">El proceso</div><h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--brown)">Tan simple como <em style="color:var(--copper);font-style:italic">abrir un libro</em></h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2.5rem;max-width:900px;margin:0 auto">
+      <div style="text-align:center;padding:1.5rem"><div style="font-size:2.5rem;margin-bottom:1rem">📚</div><div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown);margin-bottom:.6rem">1. Publica tus libros</div><p style="font-family:'Lora',serif;font-size:.9rem;line-height:1.7;color:var(--muted)">Sube los libros que ya leíste con fotos reales.</p></div>
+      <div style="text-align:center;padding:1.5rem"><div style="font-size:2.5rem;margin-bottom:1rem">🔍</div><div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown);margin-bottom:.6rem">2. Encuentra tu lectura</div><p style="font-family:'Lora',serif;font-size:.9rem;line-height:1.7;color:var(--muted)">Explora títulos y filtra por género o ciudad.</p></div>
+      <div style="text-align:center;padding:1.5rem"><div style="font-size:2.5rem;margin-bottom:1rem">🤝</div><div style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown);margin-bottom:.6rem">3. Coordina el intercambio</div><p style="font-family:'Lora',serif;font-size:.9rem;line-height:1.7;color:var(--muted)">Chatea y acuerda el encuentro. ¡Gratis!</p></div>
+    </div>
+    <div style="text-align:center;margin-top:3rem"><button class="btn-p" onclick="go('explore')">Ver libros disponibles →</button></div>
+  </div>
+  <div style="padding:5rem 4rem;background:var(--cream-dark)">
+    <div style="text-align:center;margin-bottom:3rem"><div style="font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--copper);font-weight:500;margin-bottom:.8rem">Comunidad</div><h2 style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--brown)">Lo que dicen nuestros <em style="color:var(--copper);font-style:italic">lectores</em></h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.8rem;max-width:900px;margin:0 auto">
+      <div style="background:white;padding:2rem;border-left:3px solid var(--copper)"><p style="font-family:'Lora',serif;font-size:.92rem;font-style:italic;line-height:1.75;color:var(--text);margin-bottom:1.2rem">"Llevaba meses buscando la trilogía de Zafón y en menos de una semana encontré los tres tomos."</p><div style="display:flex;align-items:center;gap:.7rem"><div style="width:34px;height:34px;border-radius:50%;background:var(--brown);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:white">V</div><div><div style="font-size:.85rem;font-weight:600;color:var(--brown)">Valentina R.</div><div style="font-size:.75rem;color:var(--muted)">Medellín</div></div></div></div>
+      <div style="background:white;padding:2rem;border-left:3px solid var(--copper)"><p style="font-family:'Lora',serif;font-size:.92rem;font-style:italic;line-height:1.75;color:var(--text);margin-bottom:1.2rem">"Mi apartamento se llenaba de libros. Gracias a Páginarium los comparto y consigo nuevos títulos."</p><div style="display:flex;align-items:center;gap:.7rem"><div style="width:34px;height:34px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:white">M</div><div><div style="font-size:.85rem;font-weight:600;color:var(--brown)">Mateo G.</div><div style="font-size:.75rem;color:var(--muted)">Bogotá</div></div></div></div>
+      <div style="background:white;padding:2rem;border-left:3px solid var(--copper)"><p style="font-family:'Lora',serif;font-size:.92rem;font-style:italic;line-height:1.75;color:var(--text);margin-bottom:1.2rem">"La plataforma es muy fácil de usar. Ya llevo quince intercambios y no paro."</p><div style="display:flex;align-items:center;gap:.7rem"><div style="width:34px;height:34px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;color:white">L</div><div><div style="font-size:.85rem;font-weight:600;color:var(--brown)">Laura S.</div><div style="font-size:.75rem;color:var(--muted)">Cali</div></div></div></div>
+    </div>
+  </div>
+  <div style="background:var(--brown);padding:5rem 4rem;text-align:center"><h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--cream);margin-bottom:1rem">Tu próxima historia <em style="color:var(--copper-light);font-style:italic">te espera</em></h2><p style="font-family:'Lora',serif;font-size:1rem;color:rgba(245,240,232,.65);max-width:440px;margin:0 auto 2.2rem;line-height:1.7">Únete gratis y empieza a intercambiar libros hoy mismo.</p><button class="btn-p" style="background:var(--copper);font-size:1rem;padding:1rem 2.5rem" onclick="openAuth()">Unirme gratis →</button></div>
+</div>
+
+<div id="page-explore" class="page">
+  <div class="page-header"><div><h2>Explorar libros</h2><p class="sub">Descubre libros disponibles para intercambio</p></div><button class="btn-p" onclick="go('publish')" id="explore-pub-btn" style="display:none">+ Publicar mi libro</button></div>
+  <div class="search-row"><input type="text" id="s-query" placeholder="🔍  Buscar por título o autor..." oninput="filterBooks()"/><select id="s-genre" onchange="filterBooks()"><option value="">Todos los géneros</option><option>Ficción</option><option>No ficción</option><option>Fantasía</option><option>Misterio</option><option>Romance</option><option>Ciencia ficción</option><option>Historia</option><option>Clásico</option><option>Otro</option></select></div>
+  <div class="filter-bar"><button class="filter-chip on" onclick="setVFilter('all',this)">Todos</button><button class="filter-chip" onclick="setVFilter('verified',this)">✅ Verificados</button><button class="filter-chip" onclick="setVFilter('pending',this)">🕐 En revisión</button></div>
+  <div class="books-grid" id="books-grid"><div class="empty">Cargando libros...</div></div>
+</div>
+
+<div id="page-publish" class="page">
+  <h2>Publicar un libro</h2><p class="sub">Comparte un libro que ya leíste con la comunidad</p>
+  <div class="pub-form">
+    <div class="blocked-banner" id="blocked-banner">🚫 Tu cuenta ha sido suspendida.</div>
+    <div class="alert" id="pub-alert"></div>
+    <div class="fg"><label>Título *</label><input type="text" id="p-title" placeholder="Ej: El nombre del viento"/></div>
+    <div class="fg"><label>Autor *</label><input type="text" id="p-author" placeholder="Ej: Patrick Rothfuss"/></div>
+    <div class="fg"><label>Género</label><select id="p-genre"><option>Ficción</option><option>No ficción</option><option>Fantasía</option><option>Misterio</option><option>Romance</option><option>Ciencia ficción</option><option>Historia</option><option>Clásico</option><option>Otro</option></select></div>
+    <div class="fg"><label>Descripción / Estado del libro</label><textarea id="p-desc" placeholder="¿De qué trata? ¿En qué estado está?"></textarea></div>
+    <div class="fg"><label>Color de portada</label><div class="colors"><div class="color-dot on" style="background:linear-gradient(135deg,#8b3a3a,#5c1f1f)" data-c="linear-gradient(135deg,#8b3a3a,#5c1f1f)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#2d4a3e,#1a2e28)" data-c="linear-gradient(135deg,#2d4a3e,#1a2e28)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#4a3060,#1a0e30)" data-c="linear-gradient(135deg,#4a3060,#1a0e30)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#c8943a,#8b5e1a)" data-c="linear-gradient(135deg,#c8943a,#8b5e1a)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#1a3a5a,#0a1525)" data-c="linear-gradient(135deg,#1a3a5a,#0a1525)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#3a5a2a,#0e2808)" data-c="linear-gradient(135deg,#3a5a2a,#0e2808)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#5a2a40,#2a0a18)" data-c="linear-gradient(135deg,#5a2a40,#2a0a18)" onclick="pickColor(this)"></div><div class="color-dot" style="background:linear-gradient(135deg,#5a3a1a,#2a1808)" data-c="linear-gradient(135deg,#5a3a1a,#2a1808)" onclick="pickColor(this)"></div></div></div>
+    <div class="fg"><label>Ciudad</label><input type="text" id="p-city" placeholder="Ej: Medellín"/></div>
+    <div class="fg"><label>Fotos del libro <span style="font-weight:400;color:var(--muted)">(máx. 4)</span></label><div class="photo-upload-area" id="upload-area"><input type="file" id="p-photos" accept="image/*" multiple onchange="previewPhotos(event)"/><div class="upload-icon">📷</div><p>Toca para agregar fotos del estado del libro</p></div><div class="photo-previews" id="photo-previews"></div><div class="upload-progress" id="upload-progress"><div class="upload-progress-bar" id="upload-bar" style="width:0%"></div></div></div>
+    <button class="btn-block" onclick="publishBook()" id="pub-btn">Publicar libro</button>
+  </div>
+</div>
+
+<div id="page-mybooks" class="page">
+  <div id="user-status-bar" class="user-status-bar"><div class="status-item">⭐ <strong id="user-avg-rating">–</strong></div><div class="status-item">⚠️ Advertencias: <strong id="user-warnings">0</strong>/3</div><div class="status-item" id="user-status-label"></div></div>
+  <div class="suspended-banner" id="suspended-banner">⏸ Cuenta suspendida 7 días.</div>
+  <div class="banned-banner" id="banned-banner">🚫 Cuenta baneada. Contacta <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aac4dfdcc5d8c5c7cbd8c1cfdec3c4cdeacdc7cbc3c684c9c5c7">[email&#160;protected]</a></div>
+  <div class="mb-header"><div><h2>Mis libros</h2><p class="sub">Libros que has publicado para intercambio</p></div><button class="btn-p" onclick="go('publish')">+ Publicar nuevo</button></div>
+  <div class="books-grid" id="mybooks-grid"><div class="empty">Cargando...</div></div>
+</div>
+
+<div id="page-chat" class="page">
+  <div class="chat-side"><div class="chat-side-head"><h3>💬 Mensajes</h3><p>Conversaciones de intercambio</p></div><ul class="chat-list" id="chat-list"><li style="padding:1.5rem;color:var(--muted);font-size:.83rem;font-family:'Lora',serif;font-style:italic">Sin conversaciones aún.</li></ul></div>
+  <div class="chat-main" id="chat-main"><div class="no-chat"><span style="font-size:2rem">📖</span><span>Selecciona una conversación</span></div></div>
+</div>
+
+<div id="page-admin" class="page">
+  <h2>⚙ Panel de Administración</h2><p class="sub">Gestiona los libros y usuarios de la comunidad</p>
+  <div class="admin-stats-row"><div class="admin-stat"><div class="admin-stat-n" id="adm-total">–</div><div class="admin-stat-l">Total libros</div></div><div class="admin-stat"><div class="admin-stat-n" id="adm-pending">–</div><div class="admin-stat-l">En revisión</div></div><div class="admin-stat"><div class="admin-stat-n" id="adm-verified">–</div><div class="admin-stat-l">Verificados</div></div><div class="admin-stat"><div class="admin-stat-n" id="adm-reports" style="color:#e74c3c">–</div><div class="admin-stat-l">Reportes</div></div></div>
+  <div class="admin-tabs"><button class="admin-tab on" onclick="adminFilter('pending')" id="adm-tab-pending">📋 En revisión</button><button class="admin-tab" onclick="adminFilter('verified')" id="adm-tab-verified">✅ Verificados</button><button class="admin-tab" onclick="adminFilter('all')" id="adm-tab-all">📚 Todos</button><button class="admin-tab" onclick="adminFilter('reports')" id="adm-tab-reports">🚨 Reportes</button></div>
+  <div class="admin-grid" id="admin-grid"><div class="empty">Cargando...</div></div>
+</div>
+
+<div id="page-terms" class="page">
+  <h2>Términos y Condiciones</h2><p class="sub">Lee atentamente antes de usar la plataforma</p>
+  <div class="terms-doc">
+    <h3>1. Descripción del servicio</h3><p>Páginarium es una plataforma gratuita que conecta lectores para el intercambio voluntario de libros.</p>
+    <h3>2. Registro y cuenta</h3><ul><li>Debes ser mayor de 13 años para registrarte.</li><li>La información que proporcionas debe ser verídica.</li><li>Una persona, una cuenta.</li></ul>
+    <h3>3. Publicación de libros</h3><ul><li>Las fotos deben ser reales y corresponder al libro que ofreces.</li><li>La descripción del estado debe ser honesta.</li><li>Todo libro pasa por revisión del administrador.</li></ul>
+    <div class="highlight"><strong>⚠️ Estado del libro:</strong> Si entregas un libro en condiciones peores a las descritas, el receptor puede reportarlo y esto contará como advertencia.</div>
+    <h3>4. Sistema de advertencias</h3><ul><li><strong>1 advertencia:</strong> Notificación en tu perfil.</li><li><strong>2 advertencias:</strong> Suspensión temporal de 7 días.</li><li><strong>3 advertencias:</strong> Baneo permanente.</li></ul>
+    <h3>5. Valoraciones</h3><p>Tras un intercambio, ambas partes pueden valorarse con 1 a 5 estrellas. Las valoraciones son públicas.</p>
+    <h3>6. Seguridad</h3><ul><li>Recomendamos intercambios en <strong>lugares públicos</strong>.</li><li>Nunca compartas datos bancarios o dirección de casa.</li></ul>
+    <h3>7. Contenido prohibido</h3><p>Queda prohibido usar la plataforma para acoso, amenazas, estafas o actividades ilegales.</p>
+    <div class="highlight">📧 Contacto: <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fd93888b928f92909c8f96988994939abd9a909c9491d39e9290">[email&#160;protected]</a></strong></div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="auth-modal" onclick="if(event.target===this)closeAuth()">
+  <div class="auth-wrap">
+    <button onclick="closeAuth()" style="position:absolute;top:.7rem;right:.8rem;background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer">✕</button>
+    <h2>Bienvenido</h2><p>Únete a la comunidad de lectores</p>
+    <div class="tabs"><button class="tab on" id="tab-btn-login" onclick="switchTab('login')">Ingresar</button><button class="tab" id="tab-btn-reg" onclick="switchTab('reg')">Registrarse</button></div>
+    <div class="alert" id="auth-alert"></div>
+    <div id="tab-login">
+      <div class="fg"><label>Correo</label><input type="email" id="l-email" placeholder="tu@correo.com"/></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn-block" onclick="doLogin()">Ingresar</button>
+      <div class="or">o</div>
+      <button class="btn-google" onclick="doGoogle()"><svg width="17" height="17" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continuar con Google</button>
+    </div>
+    <div id="tab-reg" style="display:none">
+      <div class="fg"><label>Nombre</label><input type="text" id="r-name" placeholder="Tu nombre"/></div>
+      <div class="fg"><label>Correo</label><input type="email" id="r-email" placeholder="tu@correo.com"/></div>
+      <div class="fg"><label>Contraseña</label><input type="password" id="r-pass" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+      <div class="terms-check"><input type="checkbox" id="terms-cb"/><label for="terms-cb">Acepto los <a onclick="go('terms');closeAuth()">términos de uso</a></label></div>
+      <button class="btn-block" onclick="doRegister()">Crear cuenta</button>
+      <div class="or">o</div>
+      <button class="btn-google" onclick="doGoogle()"><svg width="17" height="17" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Continuar con Google</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="auth-wrap" style="max-width:450px;">
+    <button onclick="closeModal()" style="position:absolute;top:.7rem;right:.8rem;background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer">✕</button>
+    <h2 style="font-size:1.4rem;margin-bottom:.8rem" id="modal-title">Solicitar intercambio</h2>
+    <p style="font-family:'Lora',serif;font-size:.85rem;color:var(--muted);margin-bottom:1.4rem" id="modal-desc"></p>
+    <div class="fg"><label>Tu mensaje</label><textarea id="modal-msg" style="min-height:90px"></textarea></div>
+    <div style="display:flex;gap:.8rem"><button class="btn-p" onclick="sendContact()">Enviar</button><button class="btn-s" onclick="closeModal()">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="overlay" id="report-modal" onclick="if(event.target===this)closeReport()">
+  <div class="auth-wrap" style="max-width:420px;">
+    <button onclick="closeReport()" style="position:absolute;top:.7rem;right:.8rem;background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer">✕</button>
+    <h2 style="font-size:1.4rem;margin-bottom:.5rem">🚨 Reportar</h2>
+    <div class="fg"><label>Motivo</label><select id="report-reason"><option value="suspicious">Comportamiento sospechoso</option><option value="fake">Libro o información falsa</option><option value="inappropriate">Contenido inapropiado</option><option value="spam">Spam</option><option value="harassment">Acoso o amenazas</option><option value="other">Otro</option></select></div>
+    <div class="fg"><label>Descripción (opcional)</label><textarea id="report-desc" style="min-height:80px"></textarea></div>
+    <div style="display:flex;gap:.8rem"><button class="btn-p" onclick="submitReport()">Enviar</button><button class="btn-s" onclick="closeReport()">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- RATING MODAL -->
+<div class="overlay" id="rating-modal" onclick="if(event.target===this)closeRating()">
+  <div class="auth-wrap" style="max-width:420px;">
+    <button onclick="closeRating()" style="position:absolute;top:.7rem;right:.8rem;background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer">✕</button>
+    <h2 style="font-size:1.4rem;margin-bottom:.4rem">⭐ Valorar intercambio</h2>
+    <p style="font-family:'Lora',serif;font-size:.85rem;color:var(--muted);margin-bottom:1.5rem" id="rating-desc">¿Cómo fue tu experiencia?</p>
+    <div class="fg"><label>Puntuación</label><div class="stars-row" id="stars-row"><span class="star" onclick="setStar(1)" data-v="1">★</span><span class="star" onclick="setStar(2)" data-v="2">★</span><span class="star" onclick="setStar(3)" data-v="3">★</span><span class="star" onclick="setStar(4)" data-v="4">★</span><span class="star" onclick="setStar(5)" data-v="5">★</span></div></div>
+    <div class="fg"><label>Comentario (opcional)</label><textarea id="rating-comment" style="min-height:80px"></textarea></div>
+    <div style="display:flex;gap:.8rem"><button class="btn-p" onclick="submitRating()">Enviar</button><button class="btn-s" onclick="closeRating()">Cancelar</button></div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="closeLightbox()"><button id="lightbox-close" onclick="closeLightbox()">✕</button><img id="lightbox-img" src="" alt=""/></div>
+<div id="toast"></div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
+import { initializeApp } from "https://unpkg.com/firebase@10.12.0/app/dist/index.esm2017.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, GoogleAuthProvider, signInWithPopup } from "https://unpkg.com/firebase@10.12.0/auth/dist/index.esm2017.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, doc, deleteDoc, serverTimestamp, where, setDoc, getDoc } from "https://unpkg.com/firebase@10.12.0/firestore/dist/index.esm2017.js";
+
+const app=initializeApp({apiKey:"AIzaSyDykbYmgrOmlzZiVqd4F0igiv_kPVJKLYE",authDomain:"paginarium-7dbcd.firebaseapp.com",projectId:"paginarium-7dbcd",storageBucket:"paginarium-7dbcd.firebasestorage.app",messagingSenderId:"639299741673",appId:"1:639299741673:web:527b6eb20172f64bf9cd78"});
+const auth=getAuth(app), db=getFirestore(app), gp=new GoogleAuthProvider();
+const ADMIN=['nuvoromarketing@gmail.com'];
+const CC='dmaepcxpq', CP='paginarium';
+const vSVG=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+let me=null,allBooks=[],selColor="linear-gradient(135deg,#8b3a3a,#5c1f1f)";
+let activeChatId=null,chatUnsub=null,chatsUnsub=null,contactData=null;
+let ratingData=null,selectedStar=0,reportData=null,pendingPhotos=[],vFilter='all',admFilter='pending';
+
+const ldTimeout=setTimeout(()=>{hideLoading();go('home');},6000);
+function hideLoading(){clearTimeout(ldTimeout);const l=document.getElementById('loading');if(!l.classList.contains('hide')){l.classList.add('hide');setTimeout(()=>l.style.display='none',400);}}
+
+onAuthStateChanged(auth,user=>{
+  me=user; updateNav(user);
+  const l=document.getElementById('loading');
+  if(!l.classList.contains('hide')){hideLoading();go(user?'explore':'home');}
+  else if(user){closeAuth();renderBooks(allBooks);}
+},()=>{hideLoading();go('home');});
+
+const isAdmin=u=>u&&ADMIN.includes(u.email);
+function updateNav(u){
+  const s=(id,v)=>{const e=document.getElementById(id);if(e)e.style.display=v;};
+  if(u){s('nl-login','none');s('nl-publish','list-item');s('nl-mybooks','list-item');s('nl-chat','list-item');s('nl-user','list-item');s('nav-user','flex');s('explore-pub-btn','inline-block');s('nl-admin',isAdmin(u)?'list-item':'none');const n=u.displayName||u.email.split('@')[0];document.getElementById('nav-uname').textContent=n;document.getElementById('nav-avatar').textContent=n[0].toUpperCase();}
+  else{s('nl-login','list-item');s('nl-publish','none');s('nl-mybooks','none');s('nl-chat','none');s('nl-user','none');s('nl-admin','none');s('explore-pub-btn','none');}
+}
+
+window.go=(page)=>{
+  if(page==='terms'){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-terms').classList.add('active');document.documentElement.scrollTop=0;return;}
+  const locked=['publish','mybooks','chat','admin'];
+  if(locked.includes(page)&&!me){openAuth();return;}
+  if(page==='admin'&&!isAdmin(me)){go('explore');return;}
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.documentElement.scrollTop=0;document.body.scrollTop=0;
+  document.getElementById('nav-links').classList.remove('open');
+  if(page==='explore')loadBooks();
+  if(page==='mybooks'){loadMyBooks();loadUserStatus();}
+  if(page==='chat')loadChats();
+  if(page==='home')loadStats();
+  if(page==='admin')loadAdmin();
+  if(page==='publish')checkIfBlocked();
+};
+window.toggleMenu=()=>document.getElementById('nav-links').classList.toggle('open');
+
+window.openAuth=()=>{document.getElementById('auth-modal').classList.add('open');document.getElementById('auth-alert').style.display='none';document.body.style.overflow='hidden';};
+window.closeAuth=()=>{document.getElementById('auth-modal').classList.remove('open');document.body.style.overflow='';};
+window.switchTab=(t)=>{document.getElementById('tab-login').style.display=t==='login'?'block':'none';document.getElementById('tab-reg').style.display=t==='reg'?'block':'none';document.getElementById('tab-btn-login').classList.toggle('on',t==='login');document.getElementById('tab-btn-reg').classList.toggle('on',t==='reg');document.getElementById('auth-alert').style.display='none';};
+window.doLogin=async()=>{try{await signInWithEmailAndPassword(auth,v('l-email'),v('l-pass'));toast('¡Bienvenido! 📚');}catch(e){authAlert('Correo o contraseña incorrectos.');}};
+window.doRegister=async()=>{const n=v('r-name').trim();if(!n)return authAlert('Ingresa tu nombre.');if(!document.getElementById('terms-cb').checked)return authAlert('Debes aceptar los términos de uso.');if(v('r-pass').length<6)return authAlert('Contraseña mínimo 6 caracteres.');try{const c=await createUserWithEmailAndPassword(auth,v('r-email'),v('r-pass'));await updateProfile(c.user,{displayName:n});toast('¡Bienvenido! 🎉');}catch(e){authAlert(e.code==='auth/email-already-in-use'?'Correo ya registrado.':'Error al crear la cuenta.');}};
+window.doGoogle=async()=>{try{await signInWithPopup(auth,gp);}catch(e){authAlert('No se pudo iniciar con Google.');}};
+window.doLogout=async()=>{if(chatsUnsub)chatsUnsub();if(chatUnsub)chatUnsub();await signOut(auth);toast('¡Hasta pronto! 👋');go('home');};
+
+window.loadBooks=async()=>{
+  const g=document.getElementById('books-grid');g.innerHTML='<div class="empty">Cargando libros...</div>';
+  try{const s=await getDocs(query(collection(db,'books'),orderBy('createdAt','desc')));allBooks=s.docs.map(d=>({id:d.id,...d.data()}));document.getElementById('stat-books').textContent=allBooks.length;renderBooks(allBooks);if(!allBooks.length&&me)g.innerHTML='<div class="empty" style="grid-column:1/-1">No hay libros aún.<br/><br/><button class="btn-p" onclick="seedBooks()" style="margin-top:.5rem">📚 Cargar libros de ejemplo</button></div>';}
+  catch(e){g.innerHTML='<div class="empty">Error cargando libros.</div>';}
+};
+window.filterBooks=()=>{const q=document.getElementById('s-query').value.toLowerCase(),g=document.getElementById('s-genre').value;let f=allBooks.filter(b=>(!q||b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q))&&(!g||b.genre===g));if(vFilter==='verified')f=f.filter(b=>b.verified);if(vFilter==='pending')f=f.filter(b=>!b.verified);renderBooks(f);};
+window.setVFilter=(val,el)=>{vFilter=val;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');filterBooks();};
+
+function renderBooks(books){
+  const grid=document.getElementById('books-grid');
+  if(!books.length){grid.innerHTML='<div class="empty">No se encontraron libros.</div>';return;}
+  grid.innerHTML=books.map(b=>{
+    let btn=me&&b.userId!==me.uid?`<button class="btn-contact" onclick="openModal('${b.id}','${esc(b.title)}','${b.userId}','${esc(b.ownerName||'')}')">Contactar</button>`:me&&b.userId===me.uid?`<span style="font-size:.68rem;color:var(--copper);font-weight:600">✓ Tu libro</span>`:`<button class="btn-contact" onclick="openAuth()">Ingresar</button>`;
+    const badge=b.verified?`<span class="verified-badge">${vSVG} Verificado</span>`:`<span style="font-size:.68rem;color:var(--muted);font-style:italic">🕐 En revisión</span>`;
+    const rb=b.ownerAvgRating?`<span class="rating-badge"><span class="star-icon">★</span>${b.ownerAvgRating.toFixed(1)}</span>`:'';
+    const ph=b.photos&&b.photos.length?`<div class="book-photos">${b.photos.map(u=>`<div class="book-photo" onclick="openLightbox('${u}')"><img src="${u}" loading="lazy"/></div>`).join('')}</div>`:'';
+    const rp=me&&b.userId!==me.uid?`<button class="btn-report" onclick="openReport('book','${b.id}','${esc(b.title)}')">🚩</button>`:'';
+    return `<div class="book-card ${b.verified?'':'unverified'}"><div class="bc-cover" style="background:${b.color||'linear-gradient(135deg,#3d2b1f,#1a0e08)'}"><span>${b.title}</span></div><div class="bc-body"><div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap">${badge}${rb}</div><div class="bc-title">${b.title}</div><div class="bc-author">${b.author}</div>${b.desc?`<div class="bc-desc">${b.desc}</div>`:''}${ph}${b.city?`<div class="bc-city" style="margin-top:.4rem">📍 ${b.city}</div>`:''}<div class="bc-footer"><span class="bc-genre">${b.genre||'General'}</span><div style="display:flex;gap:.3rem;align-items:center">${btn}${rp}</div></div></div></div>`;
+  }).join('');
+}
+
+window.publishBook=async()=>{
+  const title=v('p-title').trim(),author=v('p-author').trim(),desc=v('p-desc').trim();
+  if(!title||!author)return pubAlert('Por favor completa título y autor.');
+  if(containsBanned(title+' '+desc))return pubAlert('⚠️ El contenido contiene palabras no permitidas.');
+  const btn=document.getElementById('pub-btn');btn.disabled=true;btn.textContent='Publicando...';
+  try{
+    let photos=[];
+    if(pendingPhotos.length>0){const pg=document.getElementById('upload-progress'),bar=document.getElementById('upload-bar');pg.style.display='block';for(let i=0;i<pendingPhotos.length;i++){const url=await uploadCL(pendingPhotos[i],p=>{bar.style.width=((i+p)/pendingPhotos.length*100)+'%';});photos.push(url);}}
+    await addDoc(collection(db,'books'),{title,author,genre:v('p-genre'),desc,city:v('p-city').trim(),color:selColor,photos,userId:me.uid,ownerName:me.displayName||me.email.split('@')[0],ownerEmail:me.email,verified:false,createdAt:serverTimestamp()});
+    toast('¡Libro publicado! 🎉');['p-title','p-author','p-desc','p-city'].forEach(id=>document.getElementById(id).value='');document.getElementById('photo-previews').innerHTML='';document.getElementById('upload-progress').style.display='none';document.getElementById('upload-area').querySelector('p').textContent='Toca para agregar fotos del estado del libro';pendingPhotos=[];go('mybooks');
+  }catch(e){pubAlert('Error al publicar. Intenta de nuevo.');}
+  finally{btn.disabled=false;btn.textContent='Publicar libro';}
+};
+
+window.loadMyBooks=async()=>{
+  if(!me)return;const g=document.getElementById('mybooks-grid');g.innerHTML='<div class="empty">Cargando...</div>';
+  const s=await getDocs(query(collection(db,'books'),where('userId','==',me.uid)));
+  const books=s.docs.map(d=>({id:d.id,...d.data()}));
+  if(!books.length){g.innerHTML='<div class="empty">Aún no has publicado libros.<br/><br/><button class="btn-p" onclick="go(\'publish\')" style="margin-top:.5rem">Publicar mi primer libro</button></div>';return;}
+  g.innerHTML=books.map(b=>`<div class="book-card"><div class="bc-cover" style="background:${b.color||'linear-gradient(135deg,#3d2b1f,#1a0e08)'}"><span>${b.title}</span></div><div class="bc-body"><div class="bc-title">${b.title}</div><div class="bc-author">${b.author}</div>${b.city?`<div class="bc-city">📍 ${b.city}</div>`:''}<div class="bc-footer"><span class="bc-genre">${b.genre||'General'}</span><button class="btn-del" onclick="delBook('${b.id}')">🗑 Eliminar</button></div></div></div>`).join('');
+};
+window.delBook=async(id)=>{if(!confirm('¿Eliminar este libro?'))return;await deleteDoc(doc(db,'books',id));toast('Libro eliminado.');loadMyBooks();};
+
+window.seedBooks=async()=>{
+  const s=[{title:'Cien Años de Soledad',author:'Gabriel García Márquez',genre:'Ficción',city:'Bogotá',color:'linear-gradient(135deg,#8b3a3a,#5c1f1f)',desc:'Clásico imprescindible.',ownerName:'Valentina R.',userId:'demo1',ownerEmail:'demo@demo.com',verified:true},{title:'El Nombre del Viento',author:'Patrick Rothfuss',genre:'Fantasía',city:'Medellín',color:'linear-gradient(135deg,#2d4a3e,#1a2e28)',desc:'Primera parte de la saga.',ownerName:'Mateo G.',userId:'demo2',ownerEmail:'demo@demo.com',verified:true},{title:'1984',author:'George Orwell',genre:'Ciencia ficción',city:'Cali',color:'linear-gradient(135deg,#4a3060,#1a0e30)',desc:'Edición reciente.',ownerName:'Laura S.',userId:'demo3',ownerEmail:'demo@demo.com',verified:true},{title:'Sapiens',author:'Yuval Noah Harari',genre:'No ficción',city:'Barranquilla',color:'linear-gradient(135deg,#c8943a,#8b5e1a)',desc:'Muy buen estado.',ownerName:'Carlos M.',userId:'demo4',ownerEmail:'demo@demo.com',verified:true},{title:'La Sombra del Viento',author:'Carlos Ruiz Zafón',genre:'Misterio',city:'Medellín',color:'linear-gradient(135deg,#1a3a5a,#0a1525)',desc:'Tapa dura.',ownerName:'Ana P.',userId:'demo5',ownerEmail:'demo@demo.com',verified:true},{title:'El Principito',author:'Antoine de Saint-Exupéry',genre:'Clásico',city:'Bogotá',color:'linear-gradient(135deg,#5a2a40,#2a0a18)',desc:'Edición ilustrada.',ownerName:'Sofía L.',userId:'demo6',ownerEmail:'demo@demo.com',verified:true},{title:'El Alquimista',author:'Paulo Coelho',genre:'Ficción',city:'Cartagena',color:'linear-gradient(135deg,#3a5a2a,#0e2808)',desc:'Muy buen estado.',ownerName:'Diego F.',userId:'demo7',ownerEmail:'demo@demo.com',verified:true},{title:'Dune',author:'Frank Herbert',genre:'Ciencia ficción',city:'Medellín',color:'linear-gradient(135deg,#8b6914,#4a3508)',desc:'Tapa dura.',ownerName:'Andrés V.',userId:'demo8',ownerEmail:'demo@demo.com',verified:true},{title:'Harry Potter y la Piedra Filosofal',author:'J.K. Rowling',genre:'Fantasía',city:'Cali',color:'linear-gradient(135deg,#5a3a1a,#2a1808)',desc:'Primera parte.',ownerName:'Isabel R.',userId:'demo9',ownerEmail:'demo@demo.com',verified:true},{title:'Crimen y Castigo',author:'Fiódor Dostoyevski',genre:'Clásico',city:'Bogotá',color:'linear-gradient(135deg,#2a2a4a,#0e0e22)',desc:'Traducción clásica.',ownerName:'María C.',userId:'demo10',ownerEmail:'demo@demo.com',verified:true}];
+  for(const b of s)await addDoc(collection(db,'books'),{...b,createdAt:serverTimestamp()});
+  toast('¡10 libros de ejemplo agregados! 📚');loadBooks();
+};
+
+window.openModal=(bookId,bookTitle,ownerId,ownerName)=>{if(!me){openAuth();return;}contactData={bookId,bookTitle,ownerId,ownerName};document.getElementById('modal-title').textContent=`Intercambio: ${bookTitle}`;document.getElementById('modal-desc').textContent=`Envía un mensaje a ${ownerName||'este lector'} para coordinar.`;document.getElementById('modal-msg').value=`¡Hola! Me interesa tu libro "${bookTitle}". ¿Podemos coordinar un intercambio?`;document.getElementById('modal-overlay').classList.add('open');document.body.style.overflow='hidden';};
+window.closeModal=()=>{document.getElementById('modal-overlay').classList.remove('open');document.body.style.overflow='';};
+window.sendContact=async()=>{if(!me||!contactData)return;const msg=document.getElementById('modal-msg').value.trim();if(!msg)return;const chatId=[me.uid,contactData.ownerId].sort().join('_');await setDoc(doc(db,'chats',chatId),{participants:[me.uid,contactData.ownerId],participantNames:{[me.uid]:me.displayName||me.email.split('@')[0],[contactData.ownerId]:contactData.ownerName},lastMessage:msg,updatedAt:serverTimestamp()},{merge:true});await addDoc(collection(db,'chats',chatId,'messages'),{text:msg,senderId:me.uid,senderName:me.displayName||me.email.split('@')[0],createdAt:serverTimestamp()});closeModal();toast('¡Mensaje enviado! 📨');go('chat');};
+
+window.loadChats=()=>{if(!me)return;if(chatsUnsub)chatsUnsub();const cl=document.getElementById('chat-list');const q=query(collection(db,'chats'),where('participants','array-contains',me.uid),orderBy('updatedAt','desc'));chatsUnsub=onSnapshot(q,snap=>{cl.innerHTML='';if(snap.empty){cl.innerHTML='<li style="padding:1.5rem;color:var(--muted);font-size:.83rem;font-family:\'Lora\',serif;font-style:italic">Sin conversaciones aún.</li>';return;}snap.docs.forEach(d=>{const data=d.data(),otherId=data.participants.find(p=>p!==me.uid),otherName=data.participantNames?.[otherId]||'Lector',time=data.updatedAt?.toDate?.()?.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})||'';const li=document.createElement('li');li.className='ci'+(activeChatId===d.id?' on':'');li.innerHTML=`<div class="ci-name">${otherName}</div><div class="ci-prev">${data.lastMessage||''}</div><div class="ci-time">${time}</div>`;li.onclick=()=>openChat(d.id,otherName,otherId);cl.appendChild(li);});});};
+
+window.openChat=(chatId,otherName,otherId)=>{
+  activeChatId=chatId;document.querySelectorAll('.ci').forEach(el=>el.classList.remove('on'));
+  const main=document.getElementById('chat-main');
+  main.innerHTML=`<div class="chat-main-head"><div class="chat-avatar">${otherName[0].toUpperCase()}</div><div style="flex:1"><div class="chat-main-head-name">${otherName}</div><div class="chat-main-head-sub">Coordinando intercambio de libros</div></div><div style="display:flex;gap:.5rem"><button class="btn-p" style="font-size:.72rem;padding:.3rem .8rem" onclick="openRating('${chatId}','${otherId}','${otherName}')">⭐ Valorar</button><button class="btn-report" onclick="openReport('user','${otherId}','${otherName}')">🚩</button></div></div><div class="chat-msgs" id="msg-list"></div><div class="chat-input-area"><input type="text" id="chat-in" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter')sendMsg()"/><button class="chat-send" onclick="sendMsg()">Enviar →</button></div>`;
+  if(chatUnsub)chatUnsub();
+  const q=query(collection(db,'chats',chatId,'messages'),orderBy('createdAt','asc'));
+  chatUnsub=onSnapshot(q,snap=>{const list=document.getElementById('msg-list');if(!list)return;list.innerHTML=snap.empty?'<div style="display:flex;align-items:center;justify-content:center;padding:2rem;color:var(--muted);font-family:\'Lora\',serif;font-style:italic">Sé el primero en escribir ✉️</div>':'';snap.docs.forEach(d=>{const m=d.data(),mine=m.senderId===me.uid,div=document.createElement('div');div.className='bubble '+(mine?'me':'them');div.innerHTML=`${m.text}<div class="bubble-time">${m.createdAt?.toDate?.()?.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})||''}</div>`;list.appendChild(div);});list.scrollTop=list.scrollHeight;});
+};
+window.sendMsg=async()=>{if(!activeChatId||!me)return;const inp=document.getElementById('chat-in'),text=inp.value.trim();if(!text)return;if(containsBanned(text,true)){toast('⚠️ Mensaje bloqueado.');return;}inp.value='';await setDoc(doc(db,'chats',activeChatId),{lastMessage:text,updatedAt:serverTimestamp()},{merge:true});await addDoc(collection(db,'chats',activeChatId,'messages'),{text,senderId:me.uid,senderName:me.displayName||me.email.split('@')[0],createdAt:serverTimestamp()});};
+
+window.loadAdmin=async()=>{if(!isAdmin(me)){go('explore');return;}const grid=document.getElementById('admin-grid');grid.innerHTML='<div class="empty">Cargando...</div>';const snap=await getDocs(query(collection(db,'books'),orderBy('createdAt','desc')));const books=snap.docs.map(d=>({id:d.id,...d.data()}));document.getElementById('adm-total').textContent=books.length;document.getElementById('adm-pending').textContent=books.filter(b=>!b.verified).length;document.getElementById('adm-verified').textContent=books.filter(b=>b.verified).length;try{const rs=await getDocs(collection(db,'reports'));document.getElementById('adm-reports').textContent=rs.size;}catch(e){}if(admFilter==='reports'){loadReports();return;}renderAdminBooks(books,admFilter);};
+window.adminFilter=(f)=>{admFilter=f;document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('on'));document.getElementById('adm-tab-'+f).classList.add('on');if(f==='reports'){loadReports();return;}loadAdmin();};
+function renderAdminBooks(books,filter){const grid=document.getElementById('admin-grid');let f=books;if(filter==='pending')f=books.filter(b=>!b.verified);if(filter==='verified')f=books.filter(b=>b.verified);if(!f.length){grid.innerHTML=`<div class="empty">${filter==='pending'?'¡No hay libros en revisión! 🎉':'No hay libros verificados.'}</div>`;return;}grid.innerHTML=f.map(b=>`<div class="admin-card"><div class="admin-card-cover" style="background:${b.color||'#3d2b1f'}"></div><div class="admin-card-body"><div class="admin-card-title">${b.title}</div><div class="admin-card-author">${b.author} · ${b.genre||''}</div><div class="admin-card-owner">👤 ${b.ownerName||'Usuario'}${b.city?' · 📍'+b.city:''}</div>${b.desc?`<div style="font-size:.75rem;color:var(--muted);margin-bottom:.6rem;line-height:1.4">${b.desc}</div>`:''}<div class="admin-actions">${!b.verified?`<button class="btn-verify" onclick="verifyBook('${b.id}',true)">${vSVG} Verificar</button>`:`<span class="verified-badge">${vSVG} Verificado</span>`}<button class="btn-reject" onclick="verifyBook('${b.id}',false,true)">🗑 Eliminar</button></div></div></div>`).join('');}
+window.verifyBook=async(id,approve,del=false)=>{if(del){if(!confirm('¿Eliminar?'))return;await deleteDoc(doc(db,'books',id));toast('Libro eliminado.');}else{await setDoc(doc(db,'books',id),{verified:approve},{merge:true});toast(approve?'✅ Verificado':'❌ Rechazado');}loadAdmin();loadBooks();};
+async function loadReports(){const grid=document.getElementById('admin-grid');grid.innerHTML='<div class="empty">Cargando reportes...</div>';const snap=await getDocs(query(collection(db,'reports'),orderBy('createdAt','desc')));document.getElementById('adm-reports').textContent=snap.size;if(snap.empty){grid.innerHTML='<div class="empty">¡Sin reportes! 🎉</div>';return;}const reasons={suspicious:'Comportamiento sospechoso',fake:'Info falsa',inappropriate:'Inapropiado',spam:'Spam',harassment:'Acoso',other:'Otro'};grid.innerHTML=snap.docs.map(d=>{const r=d.data(),time=r.createdAt?.toDate?.()?.toLocaleDateString('es')||'';return `<div class="admin-card" style="flex-direction:column;padding:1.2rem"><div style="display:flex;justify-content:space-between;margin-bottom:.6rem"><span class="report-badge">🚨 ${reasons[r.reason]||r.reason}</span><span style="font-size:.72rem;color:var(--muted)">${time}</span></div><div style="font-size:.82rem;color:var(--brown);font-weight:600;margin-bottom:.2rem">${r.type==='book'?'📚':'👤'} ${r.targetName||r.targetId}</div><div style="font-size:.78rem;color:var(--muted);margin-bottom:.4rem">Por: ${r.reporterName||r.reporterEmail}</div>${r.desc?`<div style="font-size:.78rem;font-style:italic;color:var(--text);margin-bottom:.8rem">"${r.desc}"</div>":''}<div class="admin-actions"><button class="btn-verify" onclick="resolveReport('${d.id}')">✓ Resolver</button>${r.type==='book'?`<button class="btn-reject" onclick="verifyBook('${r.targetId}',false,true)">🗑</button>`:''}<button style="font-size:.72rem;background:#fff3cd;color:#856404;border:1px solid #f4c430;padding:.32rem .7rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif" onclick="addWarning('${r.targetId}','${esc(r.targetName||'')}')">⚠️ Advertencia</button><button style="font-size:.72rem;background:#ffe8b0;color:#856404;border:1px solid #f4c430;padding:.32rem .7rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif" onclick="suspendUser('${r.targetId}','${esc(r.targetName||'')}')">⏸ Suspender</button><button class="btn-reject" onclick="banUser('${r.targetId}','${esc(r.targetName||'')}')">🚫 Banear</button></div></div>`;}).join('');}
+window.resolveReport=async(id)=>{await deleteDoc(doc(db,'reports',id));toast('Reporte resuelto ✓');loadReports();};
+window.addWarning=async(userId,userName)=>{if(!confirm(`¿Agregar advertencia a ${userName||userId}?`))return;const ref=doc(db,'users',userId),snap=await getDoc(ref);const cur=snap.exists()?(snap.data().warnings||0):0,nw=cur+1;let status='active';if(nw>=3)status='banned';else if(nw>=2)status='suspended';await setDoc(ref,{warnings:nw,status,userId,userName},{merge:true});toast(status==='banned'?'🚫 Baneado':status==='suspended'?'⏸ Suspendido':`⚠️ Advertencia #${nw}`);loadReports();};
+window.suspendUser=async(userId,userName)=>{if(!confirm(`¿Suspender a ${userName||userId} 7 días?`))return;await setDoc(doc(db,'users',userId),{status:'suspended',userId,userName},{merge:true});toast('⏸ Suspendido 7 días');};
+window.banUser=async(userId,userName)=>{if(!confirm(`¿Banear a ${userName||userId}?`))return;await setDoc(doc(db,'users',userId),{status:'banned',userId,userName},{merge:true});toast('🚫 Usuario baneado');};
+
+window.loadUserStatus=async()=>{if(!me)return;try{const snap=await getDoc(doc(db,'users',me.uid));const data=snap.exists()?snap.data():{};const warnings=data.warnings||0,status=data.status||'active';document.getElementById('user-status-bar').style.display='flex';document.getElementById('user-warnings').textContent=warnings;const avg=document.getElementById('user-avg-rating');avg.textContent=data.avgRating?`${data.avgRating} ★ (${data.totalRatings})`:'Sin valoraciones';const label=document.getElementById('user-status-label');if(status==='active')label.innerHTML='<span style="color:#2d6a4f;font-weight:600">✅ Activa</span>';if(status==='suspended')label.innerHTML='<span style="color:#856404;font-weight:600">⏸ Suspendida</span>';if(status==='banned')label.innerHTML='<span style="color:#c0392b;font-weight:600">🚫 Baneada</span>';document.getElementById('suspended-banner').style.display=status==='suspended'?'block':'none';document.getElementById('banned-banner').style.display=status==='banned'?'block':'none';}catch(e){}};
+window.checkIfBlocked=async()=>{if(!me)return;try{const snap=await getDoc(doc(db,'users',me.uid));const status=snap.exists()?(snap.data().status||'active'):'active';const btn=document.getElementById('pub-btn'),banner=document.getElementById('blocked-banner');if(status==='banned'||status==='suspended'){if(banner)banner.style.display='block';if(btn){btn.disabled=true;btn.style.opacity='.5';}}}catch(e){}};
+
+window.openRating=(chatId,targetUserId,targetName)=>{if(!me)return;ratingData={chatId,targetUserId,targetName};document.getElementById('rating-desc').textContent=`¿Cómo fue tu intercambio con ${targetName}?`;selectedStar=0;document.querySelectorAll('.star').forEach(s=>s.classList.remove('on'));document.getElementById('rating-comment').value='';document.getElementById('rating-modal').classList.add('open');document.body.style.overflow='hidden';};
+window.closeRating=()=>{document.getElementById('rating-modal').classList.remove('open');document.body.style.overflow='';ratingData=null;};
+window.setStar=(val)=>{selectedStar=val;document.querySelectorAll('.star').forEach(s=>s.classList.toggle('on',parseInt(s.dataset.v)<=val));};
+window.submitRating=async()=>{if(!ratingData||!me)return;if(!selectedStar){toast('Por favor selecciona una puntuación ⭐');return;}try{await addDoc(collection(db,'ratings'),{fromUserId:me.uid,fromUserName:me.displayName||me.email.split('@')[0],toUserId:ratingData.targetUserId,toUserName:ratingData.targetName,chatId:ratingData.chatId,stars:selectedStar,comment:document.getElementById('rating-comment').value.trim(),createdAt:serverTimestamp()});const rs=await getDocs(query(collection(db,'ratings'),where('toUserId','==',ratingData.targetUserId)));if(!rs.empty){const avg=rs.docs.reduce((s,d)=>s+d.data().stars,0)/rs.size;await setDoc(doc(db,'users',ratingData.targetUserId),{avgRating:parseFloat(avg.toFixed(1)),totalRatings:rs.size},{merge:true});}closeRating();toast('¡Valoración enviada! ⭐');}catch(e){toast('Error al enviar valoración.');}};
+
+window.openReport=(type,id,name)=>{if(!me){openAuth();return;}reportData={type,id,name};document.getElementById('report-modal').classList.add('open');document.body.style.overflow='hidden';};
+window.closeReport=()=>{document.getElementById('report-modal').classList.remove('open');document.body.style.overflow='';reportData=null;};
+window.submitReport=async()=>{if(!reportData||!me)return;try{await addDoc(collection(db,'reports'),{type:reportData.type,targetId:reportData.id,targetName:reportData.name,reason:document.getElementById('report-reason').value,desc:document.getElementById('report-desc').value.trim(),reportedBy:me.uid,reporterEmail:me.email,reporterName:me.displayName||me.email.split('@')[0],status:'pending',createdAt:serverTimestamp()});closeReport();toast('Reporte enviado 🙏');}catch(e){toast('Error al enviar reporte.');}};
+
+window.previewPhotos=(e)=>{const files=Array.from(e.target.files).slice(0,4);pendingPhotos=files;const container=document.getElementById('photo-previews');container.innerHTML='';files.forEach((file,i)=>{const reader=new FileReader();reader.onload=ev=>{const div=document.createElement('div');div.className='photo-preview';div.innerHTML=`<img src="${ev.target.result}"/><button class="remove-photo" onclick="removePhoto(${i})">✕</button>`;container.appendChild(div);};reader.readAsDataURL(file);});document.getElementById('upload-area').querySelector('p').textContent=`${files.length} foto${files.length>1?'s':''} seleccionada${files.length>1?'s':''}`;};
+window.removePhoto=(idx)=>{pendingPhotos.splice(idx,1);const dt=new DataTransfer();pendingPhotos.forEach(f=>dt.items.add(f));document.getElementById('p-photos').files=dt.files;previewPhotos({target:{files:dt.files}});};
+function uploadCL(file,onP){return new Promise((res,rej)=>{const fd=new FormData();fd.append('file',file);fd.append('upload_preset',CP);const xhr=new XMLHttpRequest();xhr.open('POST',`https://api.cloudinary.com/v1_1/${CC}/image/upload`);xhr.upload.onprogress=e=>{if(e.lengthComputable)onP(e.loaded/e.total);};xhr.onload=()=>{const r=JSON.parse(xhr.responseText);if(r.secure_url)res(r.secure_url);else rej(new Error('Failed'));};xhr.onerror=rej;xhr.send(fd);});}
+
+window.openLightbox=(url)=>{document.getElementById('lightbox-img').src=url;document.getElementById('lightbox').classList.add('open');document.body.style.overflow='hidden';};
+window.closeLightbox=()=>{document.getElementById('lightbox').classList.remove('open');document.body.style.overflow='';};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox();closeAuth();closeModal();closeReport();closeRating();}});
+
+const BANNED=['te voy a secuestrar','quieres que nos veamos solos','ven a mi casa sin decirle a nadie','trata de personas','te llevo a otro pais','te voy a matar','te mato','voy a hacerte daño','te voy a encontrar','se donde vives','deposita primero','paga por adelantado','necesito tu contraseña','dame tu clave','sexo por el libro','fotos intimas','mandame fotos tuyas'];
+const BCHAT=['cuantos anos tienes','eres menor','no le digas a nadie','es un secreto entre nosotros','te doy dinero por'];
+function containsBanned(text,chat=false){const n=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');const t=n(text);return BANNED.some(w=>t.includes(n(w)))||(chat&&BCHAT.some(w=>t.includes(n(w))));}
+
+window.pickColor=(el)=>{document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('on'));el.classList.add('on');selColor=el.dataset.c;};
+const v=id=>document.getElementById(id).value;
+const esc=s=>(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+function authAlert(msg){const e=document.getElementById('auth-alert');e.textContent=msg;e.className='alert err';e.style.display='block';}
+function pubAlert(msg){const e=document.getElementById('pub-alert');e.textContent=msg;e.className='alert err';e.style.display='block';}
+
+window.publishBook=async()=>{
+  if(!me){openAuth();return;}
+  const title=v('p-title').trim(),author=v('p-author').trim(),genre=v('p-genre'),city=v('p-city').trim(),desc=v('p-desc').trim();
+  if(!title||!author){pubAlert('Título y autor son obligatorios.');return;}
+  const btn=document.getElementById('pub-btn');
+  btn.disabled=true;btn.textContent='Publicando...';
+  try{
+    let photos=[];
+    if(pendingPhotos.length){
+      const bar=document.getElementById('upload-progress');bar.style.display='block';
+      for(let i=0;i<pendingPhotos.length;i++){
+        const url=await uploadCL(pendingPhotos[i],p=>{bar.style.setProperty('--p',(p*100)+'%');});
+        photos.push(url);
+      }
+      bar.style.display='none';
+    }
+    await addDoc(collection(db,'books'),{
+      title,author,genre,city,desc,photos,color:selColor,
+      userId:me.uid,ownerName:me.displayName||me.email.split('@')[0],ownerEmail:me.email,
+      verified:false,createdAt:serverTimestamp()
+    });
+    toast('📚 ¡Libro publicado! Será verificado pronto.');
+    document.getElementById('p-title').value='';document.getElementById('p-author').value='';
+    document.getElementById('p-desc').value='';document.getElementById('p-city').value='';
+    document.getElementById('photo-previews').innerHTML='';pendingPhotos=[];
+    go('explore');loadBooks();
+  }catch(e){pubAlert('Error al publicar. Intenta de nuevo.');}
+  btn.disabled=false;btn.textContent='Publicar libro';
+};
+
+onAuthStateChanged(auth,async user=>{
+  me=user;
+  const nu=document.getElementById('nav-user'),nl=document.getElementById('nav-login');
+  if(user){
+    nu.style.display='flex';if(nl)nl.style.display='none';
+    const name=user.displayName||user.email.split('@')[0];
+    document.getElementById('nav-uname').textContent=name;
+    document.getElementById('nav-avatar').textContent=name[0].toUpperCase();
+    try{
+      const snap=await getDoc(doc(db,'users',user.uid));
+      const status=snap.exists()?(snap.data().status||'active'):'active';
+      if(status==='banned'){toast('🚫 Tu cuenta está baneada.');signOut(auth);return;}
+    }catch(e){}
+    if(isAdmin(user)){
+      const al=document.getElementById('nav-admin');
+      if(al)al.style.display='inline';
+    }
+    go('explore');loadBooks();
+  }else{
+    nu.style.display='none';if(nl)nl.style.display='inline';
+    go('home');
+  }
+  document.getElementById('loading').classList.add('hide');
+});
+
+setTimeout(()=>{document.getElementById('loading').classList.add('hide');},5000);
+</script>
+</body>
+</html>
