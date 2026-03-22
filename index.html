@@ -303,6 +303,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     <li id="nl-chat" style="display:none"><a onclick="go('chat');closeMenu()">Mensajes</a></li>
     <li id="nl-admin" style="display:none"><a onclick="go('admin');closeMenu()" style="color:var(--gold)!important;border:1.5px solid var(--gold);padding:.3rem .9rem;border-radius:2px;font-weight:600">⚙ Admin</a></li>
     <li id="nl-login"><a class="nav-btn" onclick="openAuth();closeMenu()">Ingresar</a></li>
+    <li id="nl-salir" style="display:none"><a onclick="doLogout();closeMenu()" style="color:#e74c3c!important">Salir</a></li>
   </ul>
   <div id="nav-user" style="display:none">
     <div id="nav-avatar">U</div>
@@ -667,14 +668,14 @@ function updateNav(u) {
   function sd(id, v) { var e = document.getElementById(id); if (e) e.style.display = v; }
   if (u) {
     var name = u.displayName || u.email.split('@')[0];
-    sd('nl-login', 'none');
+    sd('nl-login', 'none'); sd('nl-salir', 'list-item');
     sd('nl-publish', 'list-item'); sd('nl-mybooks', 'list-item'); sd('nl-chat', 'list-item');
     sd('nl-admin', isAdmin(u) ? 'list-item' : 'none');
     sd('nav-user', 'flex');
     document.getElementById('nav-uname').textContent = name;
     document.getElementById('nav-avatar').textContent = name[0].toUpperCase();
   } else {
-    sd('nl-login', 'list-item');
+    sd('nl-login', 'list-item'); sd('nl-salir', 'none');
     sd('nl-publish', 'none'); sd('nl-mybooks', 'none'); sd('nl-chat', 'none'); sd('nl-admin', 'none');
     sd('nav-user', 'none');
   }
