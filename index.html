@@ -321,7 +321,18 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     <div id="avatar-dropdown">
       <div id="avatar-drop-name"></div>
       <div id="avatar-drop-email"></div>
+      <div style="display:flex;gap:0;border-top:1px solid rgba(61,43,31,.07);border-bottom:1px solid rgba(61,43,31,.07);margin:.2rem 0">
+        <div style="flex:1;padding:.7rem 1rem;text-align:center;border-right:1px solid rgba(61,43,31,.07)">
+          <div id="drop-stat-books" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown)">—</div>
+          <div style="font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:.1rem">Libros</div>
+        </div>
+        <div style="flex:1;padding:.7rem 1rem;text-align:center">
+          <div id="drop-stat-rating" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--brown)">—</div>
+          <div style="font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:.1rem">Rating</div>
+        </div>
+      </div>
       <div class="avatar-drop-divider"></div>
+      <button onclick="go('mybooks');closeAvatarMenu()">📚 Mis libros</button>
       <button onclick="go('config');closeAvatarMenu()">⚙ Configuración</button>
       <button onclick="doLogout();closeAvatarMenu()" style="color:#e74c3c">↩ Cerrar sesión</button>
     </div>
@@ -752,8 +763,19 @@ function updateNav(u) {
 }
 
 // AVATAR DROPDOWN
-window.toggleAvatarMenu = function() {
-  document.getElementById('avatar-dropdown').classList.toggle('open');
+window.toggleAvatarMenu = async function() {
+  var d = document.getElementById('avatar-dropdown');
+  d.classList.toggle('open');
+  if (d.classList.contains('open') && me) {
+    // Cargar stats
+    try {
+      var snap = await getDocs(query(collection(db, 'books'), where('userId', '==', me.uid)));
+      document.getElementById('drop-stat-books').textContent = snap.size;
+      var usnap = await getDoc(doc(db, 'users', me.uid));
+      var avg = usnap.exists() && usnap.data().avgRating ? usnap.data().avgRating + ' ★' : '—';
+      document.getElementById('drop-stat-rating').textContent = avg;
+    } catch(e) {}
+  }
 };
 window.closeAvatarMenu = function() {
   var d = document.getElementById('avatar-dropdown');
