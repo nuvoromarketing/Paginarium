@@ -253,12 +253,18 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .nav-ham.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
 .nav-ham.open span:nth-child(2){opacity:0;}
 .nav-ham.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+.nav-right{display:none;align-items:center;gap:.5rem;}
+.nav-btn-mob{background:var(--brown);color:var(--cream);border:none;padding:.42rem 1rem;font-size:.8rem;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;border-radius:2px;}
 
-/* RESPONSIVE */
 @media(max-width:768px){
   nav{padding:.9rem 1.2rem;}
   .nav-ham{display:flex;}
+  .nav-right{display:flex;}
   #nav-user{display:none!important;}
+
+  /* Ocultar botón ingresar desktop del menú en móvil cuando no hay sesión,
+     ya que está en nav-right */
+  #nl-login{display:none!important;}
 
   .nav-links{
     display:flex;
@@ -284,15 +290,12 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
   .nav-links a{
     display:block;
     padding:.85rem 0;
-    font-size:.88rem;
+    font-size:.9rem;
     color:var(--brown)!important;
     background:none!important;
     border:none!important;
     border-radius:0!important;
-  }
-  .nav-links .nav-btn{
-    color:var(--copper)!important;
-    font-weight:600;
+    font-weight:500;
   }
 
   .hero{grid-template-columns:1fr;}
@@ -334,12 +337,21 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 <nav>
   <div class="nav-logo" onclick="go('home')">Páginar<span>ium</span></div>
 
-  <!-- Hamburguesa (solo móvil) -->
-  <button class="nav-ham" id="nav-ham" onclick="toggleMenu()" aria-label="Menú">
-    <span></span><span></span><span></span>
-  </button>
+  <!-- Botones siempre visibles en móvil (derecha) -->
+  <div class="nav-right">
+    <!-- Sin sesión -->
+    <button id="nav-login-btn" class="nav-btn-mob" onclick="openAuth()">Ingresar</button>
+    <!-- Con sesión -->
+    <div id="nav-user-mob-bar" style="display:none;align-items:center;gap:.5rem">
+      <div id="nav-avatar-bar" style="width:30px;height:30px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;color:white;flex-shrink:0;cursor:pointer" onclick="toggleMenu()">U</div>
+    </div>
+    <!-- Hamburguesa -->
+    <button class="nav-ham" id="nav-ham" onclick="toggleMenu()" aria-label="Menú">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 
-  <!-- Menú -->
+  <!-- Menú desktop -->
   <ul class="nav-links" id="nav-links">
     <li><a onclick="go('explore');closeMenu()">Explorar</a></li>
     <li id="nl-publish" style="display:none"><a onclick="go('publish');closeMenu()">Publicar</a></li>
@@ -347,14 +359,13 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     <li id="nl-chat" style="display:none"><a onclick="go('chat');closeMenu()">Mensajes</a></li>
     <li id="nl-admin" style="display:none"><a onclick="go('admin');closeMenu()" style="color:var(--gold)!important;border:1.5px solid var(--gold);padding:.3rem .9rem;border-radius:2px;font-weight:600">⚙ Admin</a></li>
     <li id="nl-login"><a class="nav-btn" onclick="openAuth();closeMenu()">Ingresar</a></li>
-    <!-- Info usuario en móvil dentro del menú -->
-    <li id="nl-user-mob" style="display:none">
-      <div style="display:flex;align-items:center;gap:.8rem;padding:.3rem 0">
-        <div id="nav-avatar-mob" style="width:28px;height:28px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.85rem;font-weight:700;color:white;flex-shrink:0">U</div>
-        <span id="nav-uname-mob" style="font-size:.85rem;font-weight:600;color:var(--brown)"></span>
+    <!-- Solo móvil: nombre + salir -->
+    <li id="nl-mob-info" style="display:none">
+      <div style="padding:.6rem 0;border-top:1px solid rgba(61,43,31,.1);margin-top:.3rem;display:flex;align-items:center;justify-content:space-between">
+        <span id="nav-uname-mob" style="font-size:.88rem;font-weight:600;color:var(--brown)"></span>
+        <button onclick="doLogout();closeMenu()" style="font-size:.78rem;background:none;border:1.5px solid rgba(231,76,60,.5);color:#e74c3c;padding:.3rem .8rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif">Salir</button>
       </div>
     </li>
-    <li id="nl-logout-mob" style="display:none"><a onclick="doLogout();closeMenu()" style="color:#e74c3c!important">Salir</a></li>
   </ul>
 
   <!-- Usuario desktop -->
@@ -717,19 +728,28 @@ window.closeMenu = function() {
 function updateNav(u) {
   function sd(id, v) { var e = document.getElementById(id); if (e) e.style.display = v; }
   if (u) {
+    var name = u.displayName || u.email.split('@')[0];
+    // Desktop
     sd('nl-login', 'none'); sd('nl-publish', 'list-item'); sd('nl-mybooks', 'list-item');
     sd('nl-chat', 'list-item'); sd('nav-user', 'flex');
     sd('nl-admin', isAdmin(u) ? 'list-item' : 'none');
-    sd('nl-user-mob', 'list-item'); sd('nl-logout-mob', 'list-item');
-    var name = u.displayName || u.email.split('@')[0];
     document.getElementById('nav-uname').textContent = name;
     document.getElementById('nav-avatar').textContent = name[0].toUpperCase();
+    // Móvil barra superior
+    sd('nav-login-btn', 'none');
+    sd('nav-user-mob-bar', 'flex');
+    document.getElementById('nav-avatar-bar').textContent = name[0].toUpperCase();
+    // Móvil menú
+    sd('nl-mob-info', 'list-item');
     document.getElementById('nav-uname-mob').textContent = name;
-    document.getElementById('nav-avatar-mob').textContent = name[0].toUpperCase();
   } else {
-    sd('nl-login', 'list-item'); sd('nl-publish', 'none'); sd('nl-mybooks', 'none');
+    sd('nl-login', 'none'); sd('nl-publish', 'none'); sd('nl-mybooks', 'none');
     sd('nl-chat', 'none'); sd('nl-admin', 'none'); sd('nav-user', 'none');
-    sd('nl-user-mob', 'none'); sd('nl-logout-mob', 'none');
+    // Móvil barra superior
+    sd('nav-login-btn', 'inline-block');
+    sd('nav-user-mob-bar', 'none');
+    // Móvil menú
+    sd('nl-mob-info', 'none');
   }
 }
 
