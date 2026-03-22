@@ -28,11 +28,21 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .nav-links a:hover{color:var(--brown);}
 .nav-btn{background:var(--brown);color:var(--cream)!important;padding:.42rem 1.1rem;border-radius:2px;transition:background .2s!important;}
 .nav-btn:hover{background:var(--copper)!important;}
-#nav-user{display:none;align-items:center;gap:.7rem;}
-#nav-uname{font-size:.83rem;font-weight:600;color:var(--brown);}
-#nav-avatar{width:30px;height:30px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.88rem;font-weight:700;color:white;flex-shrink:0;}
-#btn-logout{background:none;border:1.5px solid rgba(61,43,31,.2);color:var(--muted);padding:.32rem .8rem;font-size:.74rem;font-family:'DM Sans',sans-serif;cursor:pointer;border-radius:2px;transition:all .2s;}
-#btn-logout:hover{border-color:var(--brown);color:var(--brown);}
+/* AVATAR DROPDOWN */
+#nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--copper);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.92rem;font-weight:700;color:white;flex-shrink:0;transition:opacity .2s;}
+#nav-avatar:hover{opacity:.85;}
+#avatar-dropdown{display:none;position:absolute;top:calc(100% + .6rem);right:0;background:white;border:1px solid rgba(61,43,31,.1);border-radius:6px;box-shadow:0 8px 32px rgba(61,43,31,.14);min-width:210px;overflow:hidden;z-index:300;}
+#avatar-dropdown.open{display:block;}
+#avatar-drop-name{padding:.9rem 1rem .1rem;font-size:.88rem;font-weight:600;color:var(--brown);}
+#avatar-drop-email{padding:.1rem 1rem .7rem;font-size:.76rem;color:var(--muted);}
+.avatar-drop-divider{height:1px;background:rgba(61,43,31,.08);margin:0;}
+#avatar-dropdown button{display:block;width:100%;padding:.75rem 1rem;text-align:left;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:500;color:var(--brown);cursor:pointer;transition:background .15s;}
+#avatar-dropdown button:hover{background:var(--cream);}
+#nav-user{display:none;align-items:center;}
+/* CONFIG */
+#page-config{padding:5rem 3rem 3rem;}
+.config-card{background:white;border:1px solid rgba(61,43,31,.1);border-radius:6px;padding:1.5rem;}
+.config-card-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--brown);margin-bottom:1rem;}
 
 /* PAGES */
 .page{display:none;min-height:100vh;padding-top:72px;}
@@ -305,10 +315,15 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     <li id="nl-login"><a class="nav-btn" onclick="openAuth();closeMenu()">Ingresar</a></li>
     <li id="nl-salir" style="display:none"><a onclick="doLogout();closeMenu()" style="color:#e74c3c!important">Salir</a></li>
   </ul>
-  <div id="nav-user" style="display:none">
-    <div id="nav-avatar">U</div>
-    <span id="nav-uname"></span>
-    <button id="btn-logout" onclick="doLogout()">Salir</button>
+  <div id="nav-user" style="display:none;position:relative;">
+    <div id="nav-avatar" onclick="toggleAvatarMenu()" style="cursor:pointer">U</div>
+    <div id="avatar-dropdown">
+      <div id="avatar-drop-name"></div>
+      <div id="avatar-drop-email"></div>
+      <div class="avatar-drop-divider"></div>
+      <button onclick="go('config');closeAvatarMenu()">⚙ Configuración</button>
+      <button onclick="doLogout();closeAvatarMenu()" style="color:#e74c3c">↩ Cerrar sesión</button>
+    </div>
   </div>
   <button class="nav-ham" id="nav-ham" onclick="toggleMenu()">
     <span></span><span></span><span></span>
@@ -498,6 +513,51 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
   </div>
 </div>
 
+<!-- CONFIG -->
+<div id="page-config" class="page">
+  <div class="page-head"><h2>Configuración</h2><p>Gestiona tu cuenta y preferencias</p></div>
+  <div style="max-width:560px;display:flex;flex-direction:column;gap:1.2rem">
+
+    <!-- Perfil -->
+    <div class="config-card">
+      <div class="config-card-title">👤 Perfil</div>
+      <div class="fg"><label>Nombre</label><input type="text" id="cfg-name" placeholder="Tu nombre"/></div>
+      <div class="fg"><label>Ciudad</label><input type="text" id="cfg-city" placeholder="Ej: Medellín"/></div>
+      <div class="fg"><label>Sobre mí</label><textarea id="cfg-bio" placeholder="Cuéntanos un poco sobre ti y qué tipo de libros te gustan..." style="min-height:80px"></textarea></div>
+      <button class="btn-p" onclick="saveProfile()" style="width:100%;margin-top:.3rem">Guardar cambios</button>
+      <div id="cfg-profile-msg" class="alert err" style="margin-top:.8rem"></div>
+    </div>
+
+    <!-- Cambiar contraseña -->
+    <div class="config-card">
+      <div class="config-card-title">🔒 Cambiar contraseña</div>
+      <div class="fg"><label>Nueva contraseña</label><input type="password" id="cfg-pass1" placeholder="Mínimo 6 caracteres"/></div>
+      <div class="fg"><label>Confirmar contraseña</label><input type="password" id="cfg-pass2" placeholder="Repite la contraseña"/></div>
+      <button class="btn-p" onclick="changePassword()" style="width:100%;margin-top:.3rem">Actualizar contraseña</button>
+      <div id="cfg-pass-msg" class="alert err" style="margin-top:.8rem"></div>
+    </div>
+
+    <!-- Info de cuenta -->
+    <div class="config-card">
+      <div class="config-card-title">📊 Mi cuenta</div>
+      <div style="display:flex;flex-direction:column;gap:.6rem">
+        <div style="display:flex;justify-content:space-between;font-size:.85rem"><span style="color:var(--muted)">Correo</span><span id="cfg-email" style="color:var(--brown);font-weight:500"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem"><span style="color:var(--muted)">Miembro desde</span><span id="cfg-since" style="color:var(--brown);font-weight:500"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem"><span style="color:var(--muted)">Valoración promedio</span><span id="cfg-rating" style="color:var(--brown);font-weight:500"></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem"><span style="color:var(--muted)">Estado de cuenta</span><span id="cfg-status" style="font-weight:600"></span></div>
+      </div>
+    </div>
+
+    <!-- Zona peligrosa -->
+    <div class="config-card" style="border-color:rgba(231,76,60,.2)">
+      <div class="config-card-title" style="color:#e74c3c">⚠️ Zona de peligro</div>
+      <p style="font-size:.83rem;color:var(--muted);font-family:'Lora',serif;margin-bottom:1rem">Estas acciones son irreversibles. Procede con cuidado.</p>
+      <button onclick="doLogout()" style="font-size:.82rem;background:none;border:1.5px solid rgba(231,76,60,.4);color:#e74c3c;padding:.5rem 1.2rem;cursor:pointer;border-radius:2px;font-family:'DM Sans',sans-serif;width:100%">↩ Cerrar sesión</button>
+    </div>
+
+  </div>
+</div>
+
 <!-- ADMIN -->
 <div id="page-admin" class="page">
   <div class="page-head"><h2>Panel de administración</h2><p>Gestiona libros y usuarios</p></div>
@@ -676,14 +736,29 @@ function updateNav(u) {
     sd('nl-publish', 'list-item'); sd('nl-mybooks', 'list-item'); sd('nl-chat', 'list-item');
     sd('nl-admin', isAdmin(u) ? 'list-item' : 'none');
     sd('nav-user', 'flex');
-    document.getElementById('nav-uname').textContent = name;
     document.getElementById('nav-avatar').textContent = name[0].toUpperCase();
+    document.getElementById('avatar-drop-name').textContent = name;
+    document.getElementById('avatar-drop-email').textContent = u.email;
   } else {
     sd('nl-login', 'list-item'); sd('nl-salir', 'none');
     sd('nl-publish', 'none'); sd('nl-mybooks', 'none'); sd('nl-chat', 'none'); sd('nl-admin', 'none');
     sd('nav-user', 'none');
+    closeAvatarMenu();
   }
 }
+
+// AVATAR DROPDOWN
+window.toggleAvatarMenu = function() {
+  document.getElementById('avatar-dropdown').classList.toggle('open');
+};
+window.closeAvatarMenu = function() {
+  var d = document.getElementById('avatar-dropdown');
+  if (d) d.classList.remove('open');
+};
+document.addEventListener('click', function(e) {
+  var nu = document.getElementById('nav-user');
+  if (nu && !nu.contains(e.target)) closeAvatarMenu();
+});
 
 onAuthStateChanged(auth, function(user) {
   me = user;
@@ -701,7 +776,8 @@ onAuthStateChanged(auth, function(user) {
 
 // NAVIGATION
 window.go = function(page) {
-  var locked = ['publish', 'mybooks', 'chat', 'admin'];
+  closeAvatarMenu();
+  var locked = ['publish', 'mybooks', 'chat', 'admin', 'config'];
   if (locked.indexOf(page) !== -1 && !me) { openAuth(); return; }
   if (page === 'admin' && !isAdmin(me)) { go('explore'); return; }
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
@@ -713,6 +789,7 @@ window.go = function(page) {
   if (page === 'home') loadStats();
   if (page === 'admin') loadAdmin();
   if (page === 'publish') checkBlocked();
+  if (page === 'config') loadConfig();
 };
 
 // STATS
@@ -1351,6 +1428,68 @@ window.toast = function(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(function() { t.classList.remove('show'); }, 3000);
+};
+
+// CONFIG
+window.loadConfig = async function() {
+  if (!me) return;
+  document.getElementById('cfg-email').textContent = me.email;
+  var since = me.metadata && me.metadata.creationTime ? new Date(me.metadata.creationTime).toLocaleDateString('es', {year:'numeric',month:'long',day:'numeric'}) : '—';
+  document.getElementById('cfg-since').textContent = since;
+  document.getElementById('cfg-name').value = me.displayName || '';
+  try {
+    var snap = await getDoc(doc(db, 'users', me.uid));
+    var data = snap.exists() ? snap.data() : {};
+    document.getElementById('cfg-city').value = data.city || '';
+    document.getElementById('cfg-bio').value = data.bio || '';
+    document.getElementById('cfg-rating').textContent = data.avgRating ? (data.avgRating + ' ★ (' + data.totalRatings + ' valoraciones)') : 'Sin valoraciones';
+    var status = data.status || 'active';
+    var statusEl = document.getElementById('cfg-status');
+    if (status === 'active') statusEl.innerHTML = '<span style="color:#2d6a4f">✅ Activa</span>';
+    else if (status === 'suspended') statusEl.innerHTML = '<span style="color:#856404">⏸ Suspendida</span>';
+    else statusEl.innerHTML = '<span style="color:#c0392b">🚫 Baneada</span>';
+  } catch(e) {}
+};
+
+window.saveProfile = async function() {
+  if (!me) return;
+  var name = document.getElementById('cfg-name').value.trim();
+  var city = document.getElementById('cfg-city').value.trim();
+  var bio = document.getElementById('cfg-bio').value.trim();
+  var msg = document.getElementById('cfg-profile-msg');
+  if (!name) { msg.textContent = 'El nombre no puede estar vacío.'; msg.className = 'alert err'; msg.style.display = 'block'; return; }
+  try {
+    await updateProfile(me, { displayName: name });
+    await setDoc(doc(db, 'users', me.uid), { city: city, bio: bio, userName: name, userId: me.uid }, { merge: true });
+    updateNav(me);
+    msg.textContent = '✅ Perfil actualizado correctamente.';
+    msg.className = 'alert err';
+    msg.style.background = '#e8f5e9'; msg.style.color = '#2d6a4f'; msg.style.borderColor = '#2d6a4f';
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  } catch(e) { msg.textContent = 'Error al guardar. Intenta de nuevo.'; msg.className = 'alert err'; msg.style.display = 'block'; }
+};
+
+window.changePassword = async function() {
+  var p1 = document.getElementById('cfg-pass1').value;
+  var p2 = document.getElementById('cfg-pass2').value;
+  var msg = document.getElementById('cfg-pass-msg');
+  if (p1.length < 6) { msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; msg.style.display = 'block'; return; }
+  if (p1 !== p2) { msg.textContent = 'Las contraseñas no coinciden.'; msg.style.display = 'block'; return; }
+  try {
+    var { updatePassword } = await import('https://cdn.jsdelivr.net/npm/firebase@10.12.0/auth/+esm');
+    await updatePassword(me, p1);
+    document.getElementById('cfg-pass1').value = '';
+    document.getElementById('cfg-pass2').value = '';
+    msg.textContent = '✅ Contraseña actualizada.';
+    msg.style.background = '#e8f5e9'; msg.style.color = '#2d6a4f'; msg.style.borderColor = '#2d6a4f';
+    msg.style.display = 'block';
+    setTimeout(function() { msg.style.display = 'none'; }, 3000);
+  } catch(e) {
+    if (e.code === 'auth/requires-recent-login') msg.textContent = 'Por seguridad, cierra sesión y vuelve a ingresar antes de cambiar la contraseña.';
+    else msg.textContent = 'Error al cambiar contraseña.';
+    msg.style.display = 'block';
+  }
 };
 
 document.addEventListener('keydown', function(e) {
