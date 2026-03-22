@@ -216,7 +216,7 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
 .alert.err{background:#fde8e8;color:#c0392b;border-left:3px solid #c0392b;}
 
 /* MODALS */
-.overlay{position:fixed;inset:0;background:rgba(26,18,8,.55);z-index:500;display:none;align-items:center;justify-content:center;padding:1rem;}
+.overlay{position:fixed;inset:0;background:rgba(26,18,8,.55);z-index:1000;display:none;align-items:center;justify-content:center;padding:1rem;}
 .overlay.open{display:flex;}
 .auth-box{background:white;padding:2.2rem;max-width:420px;width:100%;border-top:4px solid var(--copper);position:relative;max-height:90vh;overflow-y:auto;}
 .auth-box h2{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:800;color:var(--brown);margin-bottom:.4rem;}
@@ -757,8 +757,15 @@ onAuthStateChanged(auth, function(user) {
   me = user;
   hideLoading();
   updateNav(user);
-  if (user) { closeAuth(); go('explore'); }
-  else { go('home'); }
+  closeMenu();
+  if (user) {
+    closeAuth();
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+    go('explore');
+  } else {
+    go('home');
+  }
 });
 
 // NAVIGATION
@@ -796,6 +803,7 @@ window.openAuth = function() {
 window.closeAuth = function() {
   document.getElementById('auth-modal').classList.remove('open');
   document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
 };
 window.switchTab = function(t) {
   document.getElementById('tab-login').style.display = t === 'login' ? 'block' : 'none';
