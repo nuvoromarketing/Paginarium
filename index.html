@@ -38,7 +38,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:cen
 .avatar-drop-divider{height:1px;background:rgba(61,43,31,.08);margin:0;}
 #avatar-dropdown button{display:block;width:100%;padding:.75rem 1rem;text-align:left;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:500;color:var(--brown);cursor:pointer;transition:background .15s;}
 #avatar-dropdown button:hover{background:var(--cream);}
-#nav-user{display:none;align-items:center;}
+#nav-user{display:none;align-items:center;position:relative;}
 /* CONFIG */
 #page-config{padding:5rem 3rem 3rem;}
 .config-card{background:white;border:1px solid rgba(61,43,31,.1);border-radius:6px;padding:1.5rem;}
@@ -273,7 +273,8 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
   .nav-links li:last-child{border-bottom:none;}
   .nav-links a{display:block!important;padding:.9rem 1.5rem;font-size:.92rem!important;color:var(--brown)!important;background:none!important;border:none!important;border-radius:0!important;letter-spacing:.03em;}
   .nav-links .nav-btn{color:var(--copper)!important;font-weight:700;background:none!important;}
-  #nav-user{display:none!important;}
+  #nav-user{display:none;}
+  #nav-user.visible{display:flex!important;}
   #nav-user.show-mob{display:flex!important;}
   .hero{grid-template-columns:1fr;}
   .hero-right{height:240px;}
@@ -730,19 +731,22 @@ function isAdmin(u) {
 
 function updateNav(u) {
   function sd(id, v) { var e = document.getElementById(id); if (e) e.style.display = v; }
+  var navUser = document.getElementById('nav-user');
   if (u) {
     var name = u.displayName || u.email.split('@')[0];
     sd('nl-login', 'none'); sd('nl-salir', 'list-item');
     sd('nl-publish', 'list-item'); sd('nl-mybooks', 'list-item'); sd('nl-chat', 'list-item');
     sd('nl-admin', isAdmin(u) ? 'list-item' : 'none');
-    sd('nav-user', 'flex');
+    navUser.style.display = 'flex';
+    navUser.classList.add('visible');
     document.getElementById('nav-avatar').textContent = name[0].toUpperCase();
     document.getElementById('avatar-drop-name').textContent = name;
     document.getElementById('avatar-drop-email').textContent = u.email;
   } else {
     sd('nl-login', 'list-item'); sd('nl-salir', 'none');
     sd('nl-publish', 'none'); sd('nl-mybooks', 'none'); sd('nl-chat', 'none'); sd('nl-admin', 'none');
-    sd('nav-user', 'none');
+    navUser.style.display = 'none';
+    navUser.classList.remove('visible');
     closeAvatarMenu();
   }
 }
