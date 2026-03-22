@@ -280,10 +280,12 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
     transition:max-height .35s ease, padding .35s ease;
     border-bottom:1px solid rgba(61,43,31,.1);
     z-index:199;
+    pointer-events:none;
   }
   .nav-links.open{
     max-height:400px;
     padding:1rem 1.5rem 1.5rem;
+    pointer-events:all;
   }
   .nav-links li{border-bottom:1px solid rgba(61,43,31,.07);}
   .nav-links li:last-child{border-bottom:none;}
@@ -758,11 +760,16 @@ onAuthStateChanged(auth, function(user) {
   hideLoading();
   updateNav(user);
   closeMenu();
+  // Limpiar cualquier bloqueo de scroll
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
   if (user) {
-    closeAuth();
-    document.body.style.overflow = '';
-    document.documentElement.style.overflow = '';
-    go('explore');
+    // Pequeño delay para que el modal se cierre antes de navegar
+    setTimeout(function() {
+      closeAuth();
+      go('explore');
+      window.scrollTo(0, 0);
+    }, 100);
   } else {
     go('home');
   }
