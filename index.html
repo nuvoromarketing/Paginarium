@@ -326,6 +326,37 @@ footer{background:var(--ink);color:rgba(245,240,232,.5);padding:2.5rem 4.5rem;di
   <p>Preparando tu biblioteca...</p>
 </div>
 
+<!-- PANTALLA DE ACCESO DEMO -->
+<div id="demo-lock" style="position:fixed;inset:0;background:var(--brown);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1.5rem;padding:2rem;">
+  <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--cream)">Páginar<span style="color:var(--copper);font-style:italic">ium</span></div>
+  <div style="background:rgba(255,255,255,.05);border:1px solid rgba(245,240,232,.12);border-radius:8px;padding:2.5rem;max-width:380px;width:100%;text-align:center;">
+    <p style="font-family:'Lora',serif;font-size:.95rem;font-style:italic;color:rgba(245,240,232,.7);margin-bottom:1.8rem;line-height:1.6">Esta es una vista de demostración.<br/>Ingresa la contraseña para continuar.</p>
+    <input type="password" id="demo-pass" placeholder="Contraseña" onkeydown="if(event.key==='Enter')checkDemo()"
+      style="width:100%;padding:.85rem 1rem;border:1.5px solid rgba(245,240,232,.15);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;border-radius:4px;outline:none;margin-bottom:.8rem;text-align:center;letter-spacing:.1em"/>
+    <div id="demo-err" style="color:#e57373;font-size:.8rem;margin-bottom:.8rem;display:none">Contraseña incorrecta.</div>
+    <button onclick="checkDemo()" style="width:100%;padding:.9rem;background:var(--copper);color:var(--cream);border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;border-radius:4px;transition:opacity .2s;">Ver demostración →</button>
+  </div>
+  <p style="font-size:.72rem;color:rgba(245,240,232,.3);font-family:'DM Sans',sans-serif">© Páginarium — Acceso restringido</p>
+</div>
+
+<script>
+var DEMO_PASS = 'paginarium2026';
+function checkDemo() {
+  var val = document.getElementById('demo-pass').value;
+  if (val === DEMO_PASS) {
+    document.getElementById('demo-lock').style.display = 'none';
+    sessionStorage.setItem('demo_ok', '1');
+  } else {
+    document.getElementById('demo-err').style.display = 'block';
+    document.getElementById('demo-pass').value = '';
+    document.getElementById('demo-pass').focus();
+  }
+}
+if (sessionStorage.getItem('demo_ok') === '1') {
+  document.getElementById('demo-lock').style.display = 'none';
+}
+</script>
+
 <nav>
   <div class="nav-logo" onclick="go('home')">Páginar<span>ium</span></div>
   <ul class="nav-links" id="nav-links">
